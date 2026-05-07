@@ -1,11 +1,11 @@
 apiVersion: v2
-name: Traefik
-description: A Helm chart for Kubernetes
+name: traefik-wrapper
+description: A Helm chart for Traefik Proxy (Latest v3)
 type: application
 version: 1.0.0
-appVersion: 'v1.0.0'
+appVersion: "3.3.4"
 
 dependencies:
   - name: traefik
-    version: "26.0.0"
+    version: "34.2.0"
     repository: "https://traefik.github.io/charts"
