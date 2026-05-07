@@ -1,15 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: Charts-app
+  name: charts-app
+  namespace: argocd
 spec:
   generators:
-    - list:
-        - path: Charts/Traefik
-        - path: Charts/ArgoCD
+  - list:
+      elements:
+      - path: Charts/Traefik
+        appname: traefik
+      - path: Charts/ArgoCD
+        appname: argocd 
   template:
     metadata:
-      name: '{{path}}'
+      name: '{{appname}}'
     spec:
       project: default
       source:
@@ -19,3 +23,7 @@ spec:
       destination:
         server: https://kubernetes.default.svc
         namespace: default
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
