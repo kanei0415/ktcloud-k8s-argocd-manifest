@@ -2,15 +2,13 @@ apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
   name: charts-app
-  namespace: argocd
+  namespace: default
 spec:
   generators:
   - list:
       elements:
       - path: Charts/Traefik
         appname: traefik
-      - path: Charts/ArgoCD
-        appname: argocd 
   template:
     metadata:
       name: '{{appname}}'
