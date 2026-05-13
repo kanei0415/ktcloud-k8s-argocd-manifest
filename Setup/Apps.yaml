@@ -1,21 +1,15 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: addons-app
+  name: apps-app
   namespace: argocd
 spec:
   generators:
   - list:
       elements:
-      - path: Addons/Postgresql
-        appname: postgresql
-        ns: postgresql
-      - path: Addons/Redis
-        appname: redis
-        ns: redis
-      - path: Addons/Kafka
-        appname: kafka
-        ns: kafka
+      - path: Apps/KTCloudMarket
+        appname: ktcloud-market
+        ns: ktcloud-market
   template:
     metadata:
       name: '{{appname}}'

@@ -1,0 +1,43 @@
+global:
+  defaultStorageClass: "nfs-client"
+  storageClass: "nfs-client"
+
+  auth:
+    postgresPassword: "admin1234"
+    existingSecret: ""
+    secretKeys:
+      adminPasswordKey: ""
+      userPasswordKey: ""
+      replicationPasswordKey: ""
+      metricsPasswordKey: ""
+
+postgresql:
+  image:
+    registry: registry-1.docker.io
+    repository: bitnami/postgresql
+    tag: latest
+    pullPolicy: IfNotPresent
+ 
+  primary:
+    initdb:
+      scripts: 
+        init-db.sql: |
+          CREATE DATABASE inventory_db;
+          CREATE DATABASE product_db;
+          CREATE DATABASE order_db;
+
+          CREATE USER "inventory-service" WITH ENCRYPTED PASSWORD 'inventory-service';
+          CREATE USER "product-service" WITH ENCRYPTED PASSWORD 'product-service';
+          CREATE USER "order-service" WITH ENCRYPTED PASSWORD 'order-service';
+
+          ALTER DATABASE inventory_db OWNER TO "inventory-service";
+          \c inventory_db
+          GRANT ALL ON SCHEMA public TO "inventory-service";
+
+          ALTER DATABASE product_db OWNER TO "product-service";
+          \c product_db
+          GRANT ALL ON SCHEMA public TO "product-service";
+
+          ALTER DATABASE order_db OWNER TO "order-service";
+          \c order_db
+          GRANT ALL ON SCHEMA public TO "order-service";

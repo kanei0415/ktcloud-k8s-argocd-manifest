@@ -1,0 +1,11 @@
+apiVersion: v2
+name: ktcloud-redis
+description: Redis wrapper for multi-db setup
+type: application
+version: 1.0.0
+appVersion: "8.6.3"
+
+dependencies:
+  - name: redis
+    version: 25.5.2
+    repository: https://charts.bitnami.com/bitnami

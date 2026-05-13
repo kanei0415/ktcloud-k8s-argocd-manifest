@@ -1,0 +1,36 @@
+global:
+  defaultStorageClass: "nfs-client"
+  security:
+    allowInsecureImages: true
+
+kafka:
+  image:
+    registry: public.ecr.aws
+    repository: bitnami/kafka
+    tag: 3.9.0-debian-12-r3
+    pullPolicy: Always
+
+  defaultInitContainers:
+    volumePermissions:
+      enabled: true
+      image:
+        registry: public.ecr.aws
+        repository: bitnami/os-shell
+        tag: 12-debian-12-r51
+      containerSecurityContext:
+        runAsUser: 0
+
+  persistence:
+    enabled: true
+    storageClass: "nfs-client"
+    size: 2Gi
+
+  listeners:
+    client:
+      protocol: PLAINTEXT
+    controller:
+      protocol: PLAINTEXT
+    interbroker:
+      protocol: PLAINTEXT
+    external:
+      protocol: PLAINTEXT

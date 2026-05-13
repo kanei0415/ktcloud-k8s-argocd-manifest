@@ -4,6 +4,9 @@ description: A Helm chart for Traefik Proxy (Latest v3)
 type: application
 version: 1.0.0
 appVersion: "3.3.4"
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
 
 dependencies:
   - name: traefik

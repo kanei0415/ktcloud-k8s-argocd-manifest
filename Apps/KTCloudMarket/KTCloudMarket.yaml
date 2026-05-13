@@ -1,0 +1,51 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: ktcloud-market-applications
+  namespace: argocd
+spec:
+  generators:
+    - list:
+       elements:
+        - app: inventory-service
+          environment: release
+          revision: HEAD
+          ns: ktcloud-market-msa-release
+        - app: order-service
+          environment: release
+          revision: HEAD
+          ns: ktcloud-market-msa-release
+        - app: product-service
+          environment: release
+          revision: HEAD
+          ns: ktcloud-market-msa-release
+        - app: user-api-gateway
+          environment: release
+          revision: HEAD
+          ns: ktcloud-market-msa-release
+  template:
+    metadata:
+      name: '{{ app }}-{{ environment }}'
+    spec:
+      project: default
+      sources:
+        - repoURL: https://github.com/ktcloud-msa/ktcloud-msa-chart.git
+          targetRevision: '{{ revision }}'
+          path: '.'
+          ref: template
+          helm:
+            valueFiles:
+              - '$values/{{ app }}/values-{{ environment }}.yaml'
+        - repoURL: 'https://github.com/ktcloud-msa/ktcloud-msa-values.git'
+          targetRevision: '{{ revision }}'
+          ref: values
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{ ns }}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - SkipDryRunOnMissingResource=true

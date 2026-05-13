@@ -1,0 +1,20 @@
+global:
+  imagePullSecrets: []
+  defaultStorageClass: "nfs-client"
+  storageClass: "nfs-client"
+
+redis:
+  image:
+    registry: registry-1.docker.io
+    repository: bitnami/redis
+    tag: latest
+    pullSecrets: []
+  
+  auth:
+    enabled: true
+    password: "admin1234"
+  
+  sentinel:
+    enabled: false
+  metrics:
+    enabled: false
