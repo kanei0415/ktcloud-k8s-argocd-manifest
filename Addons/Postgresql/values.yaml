@@ -1,6 +1,6 @@
 global:
-  defaultStorageClass: "nfs-client"
-  storageClass: "nfs-client"
+  defaultStorageClass: "ebs-sc"
+  storageClass: "ebs-sc"
 
   auth:
     postgresPassword: "admin1234"
@@ -25,10 +25,12 @@ postgresql:
           CREATE DATABASE inventory_db;
           CREATE DATABASE product_db;
           CREATE DATABASE order_db;
+          CREATE DATABASE auth_db;
 
           CREATE USER "inventory-service" WITH ENCRYPTED PASSWORD 'inventory-service';
           CREATE USER "product-service" WITH ENCRYPTED PASSWORD 'product-service';
           CREATE USER "order-service" WITH ENCRYPTED PASSWORD 'order-service';
+          CREATE USER "auth-service" WITH ENCRYPTED PASSWORD 'auth-service';
 
           ALTER DATABASE inventory_db OWNER TO "inventory-service";
           \c inventory_db
@@ -41,3 +43,7 @@ postgresql:
           ALTER DATABASE order_db OWNER TO "order-service";
           \c order_db
           GRANT ALL ON SCHEMA public TO "order-service";
+
+          ALTER DATABASE order_db OWNER TO "auth-service";
+          \c auth_db
+          GRANT ALL ON SCHEMA public TO "auth-service";

@@ -1,7 +1,7 @@
 global:
   imagePullSecrets: []
-  defaultStorageClass: "nfs-client"
-  storageClass: "nfs-client"
+  defaultStorageClass: "ebs-sc"
+  storageClass: "ebs-sc"
 
 redis:
   image:

@@ -7,22 +7,30 @@ spec:
   generators:
     - list:
        elements:
-        - app: inventory-service
+        - app: ktcloud-msa-auth-service
           environment: release
           revision: HEAD
-          ns: ktcloud-market-msa-release
-        - app: order-service
+          ns: ktcloud-market-msa
+
+        - app: ktcloud-msa-inventory-service
           environment: release
           revision: HEAD
-          ns: ktcloud-market-msa-release
-        - app: product-service
+          ns: ktcloud-market-msa
+
+        - app: ktcloud-msa-order-service
           environment: release
           revision: HEAD
-          ns: ktcloud-market-msa-release
-        - app: user-api-gateway
+          ns: ktcloud-market-msa
+
+        - app: ktcloud-msa-product-service
           environment: release
           revision: HEAD
-          ns: ktcloud-market-msa-release
+          ns: ktcloud-market-msa
+
+        - app: ktcloud-msa-user-api-gateway
+          environment: release
+          revision: HEAD
+          ns: ktcloud-market-msa
   template:
     metadata:
       name: '{{ app }}-{{ environment }}'
