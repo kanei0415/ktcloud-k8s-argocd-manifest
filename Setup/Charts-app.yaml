@@ -12,16 +12,16 @@ spec:
         ns: traefik
   template:
     metadata:
-      name: '{{appname}}'
+      name: '{{ appname }}'
     spec:
       project: default
       source:
         repoURL: "https://github.com/kanei0415/ktcloud-k8s-argocd-manifest.git"
         targetRevision: main
-        path: '{{path}}'
+        path: '{{ path }}'
       destination:
         server: https://kubernetes.default.svc
-        namespace: traefik
+        namespace: '{{ ns }}'
       syncPolicy:
         automated:
           prune: true
