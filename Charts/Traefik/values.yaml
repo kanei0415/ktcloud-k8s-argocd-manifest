@@ -11,6 +11,11 @@ traefik:
       protocol: TCP
   service:
     type: LoadBalancer
+    additionalPorts: 
+      - name: traefik
+        port: 8080
+        targetPort: 8080
+        protocol: TCP
     annotations:
       service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
       service.beta.kubernetes.io/aws-load-balancer-type: "external"
