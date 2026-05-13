@@ -7,7 +7,6 @@ metadata:
     traefik.ingress.kubernetes.io/router.entrypoints: web
 spec:
   rules:
-  - host: "kt-cloud-nlb-9262b486443f8713.elb.ap-northeast-2.amazonaws.com"
     http:
       paths:
       - path: /argocd
