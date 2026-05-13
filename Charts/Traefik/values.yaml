@@ -15,6 +15,9 @@ traefik:
         default: true
       exposedPort: 8081
       protocol: TCP
+  ping:
+    enabled: true
+    terminatingStatusCode: 503
     
   service:
     type: NodePort
