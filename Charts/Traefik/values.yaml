@@ -9,8 +9,15 @@ traefik:
         default: true
       exposedPort: 8080
       protocol: TCP
+    argocd-port:
+      port: 8081
+      expose:
+        default: true
+      exposedPort: 8081
+      protocol: TCP
+    
   service:
-    type: LoadBalancer
+    type: NodePort
     additionalPorts: 
       - name: traefik
         port: 8080
