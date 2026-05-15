@@ -1,32 +1,94 @@
 traefik:
+  deployment:
+    kind: Deployment
+    replicas: 2
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: traefik
+            topologyKey: topology.kubernetes.io/zone
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+  ports:
+    web:
+      port: 8000
+      expose:
+        default: true
+      exposedPort: 80
+      protocol: TCP
+    traefik:
+      port: 9000
+      expose:
+        default: false
+      protocol: TCP
+    websecure:
+      expose:
+        default: false
+
+  service:
+    type: NodePort
+    annotations: {}
+
+  ping:
+    enabled: true
+
+  additionalArguments:
+    - "--ping.entryPoint=web"
+    - "--ping.terminatingStatusCode=503"
+
   ingressRoute:
     dashboard:
       enabled: true
-  ports:
-    traefik:
-      port: 8080
-      expose:
-        default: true
-      exposedPort: 8080
-      protocol: TCP
-    argocd-port:
-      port: 8081
-      expose:
-        default: true
-      exposedPort: 8081
-      protocol: TCP
-  ping:
+      entryPoints: ["traefik"]
+      matchRule: PathPrefix(`/dashboard`) || PathPrefix(`/api`)
+
+  providers:
+    kubernetesCRD:
+      enabled: true
+      allowCrossNamespace: true
+
+    kubernetesIngress:
+      enabled: false
+
+  logs:
+    general:
+      level: INFO
+    access:
+      enabled: true
+      format: json
+
+  metrics:
+    prometheus:
+      service:
+        enabled: true
+      serviceMonitor:
+        enabled: false
+
+  rbac:
     enabled: true
-    terminatingStatusCode: 503
-    
-  service:
-    type: NodePort
-    additionalPorts: 
-      - name: traefik
-        port: 8080
-        targetPort: 8080
-        protocol: TCP
-    annotations:
-      service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
-      service.beta.kubernetes.io/aws-load-balancer-type: "external"
-      service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "instance"
+
+  ingressClass:
+    enabled: false
+
+routing:
+  app:
+    serviceName: ktcloud-msa-user-api-gateway-release
+    namespace: ktcloud-market-msa
+    port: 80
+
+  argocd:
+    serviceName: argocd-server
+    namespace: argocd
+    port: 80

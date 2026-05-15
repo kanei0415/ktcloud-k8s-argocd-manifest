@@ -2,6 +2,9 @@ global:
   defaultStorageClass: "ebs-sc"
   storageClass: "ebs-sc"
 
+  security:
+    allowInsecureImages: true
+
   auth:
     postgresPassword: "admin1234"
     existingSecret: ""
@@ -13,8 +16,8 @@ global:
 
 postgresql:
   image:
-    registry: registry-1.docker.io
-    repository: bitnami/postgresql
+    registry: docker.io
+    repository: bitnamilegacy/postgresql
     tag: latest
     pullPolicy: IfNotPresent
  

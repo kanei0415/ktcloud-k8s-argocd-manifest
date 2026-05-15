@@ -3,10 +3,13 @@ global:
   defaultStorageClass: "ebs-sc"
   storageClass: "ebs-sc"
 
+  security:
+    allowInsecureImages: true
+
 redis:
   image:
-    registry: registry-1.docker.io
-    repository: bitnami/redis
+    registry: docker.io
+    repository: bitnamilegacy/redis
     tag: latest
     pullSecrets: []
   

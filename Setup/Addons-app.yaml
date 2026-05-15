@@ -16,6 +16,9 @@ spec:
       - path: Addons/Kafka
         appname: kafka
         ns: kafka
+      - path: Addons/SealedSecrets
+        appname: sealed-secrets
+        ns: sealed-secrets
   template:
     metadata:
       name: '{{appname}}'
