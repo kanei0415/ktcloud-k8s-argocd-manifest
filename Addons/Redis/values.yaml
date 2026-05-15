@@ -1,7 +1,5 @@
 global:
   imagePullSecrets: []
-  defaultStorageClass: "ebs-sc"
-  storageClass: "ebs-sc"
 
   security:
     allowInsecureImages: true
