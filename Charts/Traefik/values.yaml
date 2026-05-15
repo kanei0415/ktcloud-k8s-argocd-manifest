@@ -2,6 +2,7 @@ traefik:
   deployment:
     kind: Deployment
     replicas: 2
+    healthchecksPort: 8000
 
   affinity:
     podAntiAffinity:
