@@ -44,6 +44,6 @@ postgresql:
           \c order_db
           GRANT ALL ON SCHEMA public TO "order-service";
 
-          ALTER DATABASE order_db OWNER TO "auth-service";
+          ALTER DATABASE auth_db OWNER TO "auth-service";
           \c auth_db
           GRANT ALL ON SCHEMA public TO "auth-service";
