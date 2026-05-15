@@ -5,16 +5,18 @@ global:
     allowInsecureImages: true
 
 redis:
+  architecture: standalone
+
   image:
     registry: docker.io
     repository: bitnamilegacy/redis
-    tag: latest
+    tag: 8.2.1-debian-12-r0
     pullSecrets: []
-  
+
   auth:
     enabled: true
     password: "admin1234"
-  
+
   sentinel:
     enabled: false
   metrics:
