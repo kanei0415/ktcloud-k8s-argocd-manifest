@@ -78,7 +78,10 @@ traefik:
       service:
         enabled: true
       serviceMonitor:
-        enabled: false
+        enabled: true
+        namespace: kube-prometheus-stack
+        namespaceSelector:
+          any: true
 
   rbac:
     enabled: true
@@ -95,4 +98,9 @@ routing:
   argocd:
     serviceName: argocd-server
     namespace: argocd
+    port: 80
+
+  grafana:
+    serviceName: grafana
+    namespace: kube-prometheus-stack
     port: 80

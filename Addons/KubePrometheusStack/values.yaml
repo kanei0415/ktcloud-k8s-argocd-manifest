@@ -1,0 +1,124 @@
+kube-prometheus-stack:
+  fullnameOverride: kps
+
+  crds:
+    enabled: true
+
+  # ---------------------------------------------------------------
+  # Disable Alertmanager (not requested)
+  # ---------------------------------------------------------------
+  alertmanager:
+    enabled: false
+
+  # ---------------------------------------------------------------
+  # Prometheus
+  # ---------------------------------------------------------------
+  prometheus:
+    enabled: true
+    prometheusSpec:
+      retention: 7d
+      retentionSize: "9GiB"
+
+      # Pick up every ServiceMonitor / PodMonitor in the cluster regardless
+      # of label, so Traefik, Istio, Kafka, etc. are scraped without us
+      # adding chart-specific matchers.
+      serviceMonitorSelectorNilUsesHelmValues: false
+      podMonitorSelectorNilUsesHelmValues: false
+      ruleSelectorNilUsesHelmValues: false
+      probeSelectorNilUsesHelmValues: false
+      scrapeConfigSelectorNilUsesHelmValues: false
+
+      resources:
+        requests:
+          cpu: 200m
+          memory: 512Mi
+        limits:
+          cpu: 1000m
+          memory: 2Gi
+
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: ebs-sc
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 10Gi
+
+    service:
+      type: ClusterIP
+
+  # ---------------------------------------------------------------
+  # Grafana — served under /grafana sub-path through Traefik
+  # ---------------------------------------------------------------
+  grafana:
+    enabled: true
+    fullnameOverride: grafana
+
+    # Replace with ExternalSecret reference once an SM secret for grafana exists.
+    # For now the chart will generate a random admin password into a K8s Secret
+    # named `grafana` (key: admin-password). Run:
+    #   kubectl -n kube-prometheus-stack get secret grafana \
+    #     -o jsonpath="{.data.admin-password}" | base64 -d
+    adminPassword: ""
+
+    service:
+      type: ClusterIP
+      port: 80
+
+    persistence:
+      enabled: true
+      storageClassName: ebs-sc
+      size: 5Gi
+      accessModes: ["ReadWriteOnce"]
+
+    # Sub-path serving so http://<alb>/grafana works through Traefik
+    # without a stripPrefix middleware. Grafana itself rewrites every
+    # link / asset URL to include /grafana when serve_from_sub_path=true.
+    grafana.ini:
+      server:
+        root_url: "%(protocol)s://%(domain)s/grafana"
+        serve_from_sub_path: true
+      analytics:
+        check_for_updates: false
+      log:
+        mode: console
+
+    sidecar:
+      dashboards:
+        enabled: true
+        searchNamespace: ALL
+      datasources:
+        enabled: true
+        defaultDatasourceEnabled: true
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+  # ---------------------------------------------------------------
+  # kube-state-metrics / node-exporter (left default; cluster autoscaler,
+  # kubelet, scheduler, controller-manager scrapes inherited from the
+  # chart's defaults).
+  # ---------------------------------------------------------------
+  kube-state-metrics:
+    resources:
+      requests:
+        cpu: 20m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 256Mi
+
+  prometheus-node-exporter:
+    resources:
+      requests:
+        cpu: 20m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi

@@ -7,24 +7,49 @@ spec:
   generators:
   - list:
       elements:
-      - path: Addons/Postgresql
-        appname: postgresql
-        ns: postgresql
-      - path: Addons/Redis
-        appname: redis
-        ns: redis
-      - path: Addons/Kafka
-        appname: kafka
-        ns: kafka
-      - path: Addons/SealedSecrets
-        appname: sealed-secrets
-        ns: sealed-secrets
+      # Wave 0: storage layer + Istio CRDs (everything else may depend on these)
       - path: Addons/AwsEbsCsi
         appname: aws-ebs-csi-driver
         ns: kube-system
+        wave: "0"
+      - path: Addons/Istio/Base
+        appname: istio-base
+        ns: istio-system
+        wave: "0"
+
+      # Wave 1: control planes / operators that need CRDs from wave 0 (or bundle their own)
+      - path: Addons/Istio/Istiod
+        appname: istiod
+        ns: istio-system
+        wave: "1"
+      - path: Addons/ExternalSecrets
+        appname: external-secrets
+        ns: external-secrets
+        wave: "1"
+      - path: Addons/ClusterAutoscaler
+        appname: cluster-autoscaler
+        ns: kube-system
+        wave: "1"
+      - path: Addons/Kafka
+        appname: kafka
+        ns: kafka
+        wave: "1"
+      - path: Addons/KubePrometheusStack
+        appname: kube-prometheus-stack
+        ns: kube-prometheus-stack
+        wave: "1"
+
+      # Wave 2: edge (ALB-fronted ingress). Traefik depends on the
+      # ServiceMonitor CRD from kube-prometheus-stack (wave 1).
+      - path: Addons/Traefik
+        appname: traefik
+        ns: traefik
+        wave: "2"
   template:
     metadata:
       name: '{{appname}}'
+      annotations:
+        argocd.argoproj.io/sync-wave: '{{wave}}'
     spec:
       project: default
       source:
@@ -41,3 +66,4 @@ spec:
         syncOptions:
           - CreateNamespace=true
           - SkipDryRunOnMissingResource=true
+          - ServerSideApply=true

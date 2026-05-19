@@ -1,0 +1,11 @@
+apiVersion: v2
+name: cluster-autoscaler
+description: Kubernetes Cluster Autoscaler for AWS ASG
+type: application
+version: 1.0.0
+appVersion: "1.30.0"
+
+dependencies:
+  - name: cluster-autoscaler
+    version: 9.37.x
+    repository: https://kubernetes.github.io/autoscaler

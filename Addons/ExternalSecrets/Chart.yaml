@@ -1,0 +1,11 @@
+apiVersion: v2
+name: external-secrets
+description: External Secrets Operator with AWS Secrets Manager ClusterSecretStore
+type: application
+version: 1.0.0
+appVersion: "0.10.0"
+
+dependencies:
+  - name: external-secrets
+    version: 0.10.x
+    repository: https://charts.external-secrets.io

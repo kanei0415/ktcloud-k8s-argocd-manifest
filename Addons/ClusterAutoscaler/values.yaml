@@ -1,0 +1,43 @@
+cluster-autoscaler:
+  cloudProvider: aws
+  awsRegion: ap-northeast-2
+
+  autoDiscovery:
+    clusterName: kt-cloud-cluster
+    tags:
+      - k8s.io/cluster-autoscaler/enabled
+      - k8s.io/cluster-autoscaler/kt-cloud-cluster
+
+  rbac:
+    create: true
+    serviceAccount:
+      create: true
+      name: cluster-autoscaler
+      annotations:
+        eks.amazonaws.com/role-arn: arn:aws:iam::REPLACE_ACCOUNT_ID:role/kt-cloud-cluster-cluster-autoscaler
+
+  extraArgs:
+    skip-nodes-with-system-pods: false
+    skip-nodes-with-local-storage: false
+    balance-similar-node-groups: true
+    expander: least-waste
+    scale-down-unneeded-time: 5m
+    scale-down-delay-after-add: 5m
+
+  podAnnotations:
+    cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 300Mi
+    limits:
+      cpu: 200m
+      memory: 600Mi
+
+  priorityClassName: system-cluster-critical
+
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      effect: NoSchedule
+      operator: Exists

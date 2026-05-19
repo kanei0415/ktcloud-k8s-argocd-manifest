@@ -1,0 +1,11 @@
+apiVersion: v2
+name: istiod
+description: Istio control plane (istiod)
+type: application
+version: 1.0.0
+appVersion: "1.23.0"
+
+dependencies:
+  - name: istiod
+    version: 1.23.x
+    repository: https://istio-release.storage.googleapis.com/charts

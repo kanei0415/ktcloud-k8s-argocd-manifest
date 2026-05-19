@@ -1,0 +1,21 @@
+external-secrets:
+  installCRDs: true
+
+  serviceAccount:
+    create: true
+    name: external-secrets
+    annotations:
+      eks.amazonaws.com/role-arn: arn:aws:iam::REPLACE_ACCOUNT_ID:role/kt-cloud-cluster-external-secrets
+
+  webhook:
+    create: true
+  certController:
+    create: true
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 96Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
