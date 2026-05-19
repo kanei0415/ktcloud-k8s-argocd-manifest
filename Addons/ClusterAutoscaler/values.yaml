@@ -14,7 +14,7 @@ cluster-autoscaler:
       create: true
       name: cluster-autoscaler
       annotations:
-        eks.amazonaws.com/role-arn: arn:aws:iam::REPLACE_ACCOUNT_ID:role/kt-cloud-cluster-cluster-autoscaler
+        eks.amazonaws.com/role-arn: arn:aws:iam::208876571165:role/kt-cloud-cluster-cluster-autoscaler
 
   extraArgs:
     skip-nodes-with-system-pods: false

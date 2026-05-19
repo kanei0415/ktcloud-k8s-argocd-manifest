@@ -4,7 +4,7 @@ aws-ebs-csi-driver:
       create: true
       name: ebs-csi-controller-sa
       annotations:
-        eks.amazonaws.com/role-arn: arn:aws:iam::REPLACE_ACCOUNT_ID:role/AmazonEKS_EBS_CSI_DriverRole
+        eks.amazonaws.com/role-arn: arn:aws:iam::208876571165:role/kt-cloud-cluster-ebs-csi-controller
 
   node:
     serviceAccount:
