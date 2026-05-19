@@ -67,3 +67,10 @@ spec:
           - CreateNamespace=true
           - SkipDryRunOnMissingResource=true
           - ServerSideApply=true
+      # istiod re-writes failurePolicy on its own webhooks at runtime, which
+      # otherwise leaves istio-base / istiod permanently OutOfSync.
+      ignoreDifferences:
+        - group: admissionregistration.k8s.io
+          kind: ValidatingWebhookConfiguration
+          jqPathExpressions:
+            - '.webhooks[]?.failurePolicy'
