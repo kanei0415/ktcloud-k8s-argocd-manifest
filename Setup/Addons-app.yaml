@@ -19,6 +19,9 @@ spec:
       - path: Addons/SealedSecrets
         appname: sealed-secrets
         ns: sealed-secrets
+      - path: Addons/AwsEbsCsi
+        appname: aws-ebs-csi-driver
+        ns: kube-system
   template:
     metadata:
       name: '{{appname}}'

@@ -1,0 +1,24 @@
+aws-ebs-csi-driver:
+  controller:
+    serviceAccount:
+      create: true
+      name: ebs-csi-controller-sa
+      annotations:
+        eks.amazonaws.com/role-arn: arn:aws:iam::REPLACE_ACCOUNT_ID:role/AmazonEKS_EBS_CSI_DriverRole
+
+  node:
+    serviceAccount:
+      create: true
+      name: ebs-csi-node-sa
+
+  storageClasses:
+    - name: ebs-sc
+      annotations:
+        storageclass.kubernetes.io/is-default-class: "true"
+      volumeBindingMode: WaitForFirstConsumer
+      reclaimPolicy: Delete
+      allowVolumeExpansion: true
+      parameters:
+        type: gp3
+        encrypted: "true"
+        csi.storage.k8s.io/fstype: ext4
