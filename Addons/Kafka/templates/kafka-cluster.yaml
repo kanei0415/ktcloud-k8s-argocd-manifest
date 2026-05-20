@@ -6,8 +6,8 @@ metadata:
   labels:
     strimzi.io/cluster: kafka
   annotations:
-    argocd.argoproj.io/sync-options: ServerSideApply=true
-    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/sync-options: ServerSideApply=true,SkipDryRunOnMissingResource=true
+    argocd.argoproj.io/sync-wave: "10"
 spec:
   replicas: 1
   roles:
@@ -37,8 +37,8 @@ metadata:
   annotations:
     strimzi.io/node-pools: enabled
     strimzi.io/kraft: enabled
-    argocd.argoproj.io/sync-options: ServerSideApply=true
-    argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/sync-options: ServerSideApply=true,SkipDryRunOnMissingResource=true
+    argocd.argoproj.io/sync-wave: "11"
 spec:
   kafka:
     version: 3.9.0

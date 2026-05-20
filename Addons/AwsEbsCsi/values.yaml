@@ -21,4 +21,3 @@ aws-ebs-csi-driver:
       parameters:
         type: gp3
         encrypted: "true"
-        csi.storage.k8s.io/fstype: ext4
