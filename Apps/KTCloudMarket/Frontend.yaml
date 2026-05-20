@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ktcloud-msa-frontend-release
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/kanei0415/ktcloud-k8s-argocd-manifest.git
+      targetRevision: HEAD
+      path: Apps/KTCloudMarket/Frontend
+      helm:
+        valueFiles:
+          - $values/ktcloud-msa-frontend/values-release.yaml
+    - repoURL: https://github.com/ktcloud-msa/ktcloud-msa-values.git
+      targetRevision: HEAD
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ktcloud-market-msa
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    managedNamespaceMetadata:
+      labels:
+        istio-injection: enabled
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
+      - ServerSideApply=true

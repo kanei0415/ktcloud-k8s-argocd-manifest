@@ -90,7 +90,12 @@ traefik:
     enabled: false
 
 routing:
-  app:
+  frontend:
+    serviceName: ktcloud-msa-frontend-release
+    namespace: ktcloud-market-msa
+    port: 80
+
+  bff:
     serviceName: ktcloud-msa-user-api-gateway-release
     namespace: ktcloud-market-msa
     port: 80

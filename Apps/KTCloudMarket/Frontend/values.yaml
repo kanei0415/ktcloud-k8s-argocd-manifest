@@ -1,0 +1,12 @@
+image:
+  repository: kanei0415/ktcloud-msa-frontend
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+
+containerPort: 80
+
+service:
+  type: ClusterIP
+  port: 80

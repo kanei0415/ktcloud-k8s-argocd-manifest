@@ -1,4 +1,14 @@
 apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: strip-bff-prefix
+  namespace: {{ .Release.Namespace }}
+spec:
+  stripPrefix:
+    prefixes:
+      - /ktcloud-msa/user-api
+---
+apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: ktcloud-market
@@ -7,10 +17,28 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: PathPrefix(`/`)
+    # BFF (user-api-gateway). Higher priority so /ktcloud-msa/user-api/* never
+    # falls through to the frontend rule below. StripPrefix removes the
+    # /ktcloud-msa/user-api segment so the gateway sees its native /api/v1/...
+    # paths unchanged from local dev.
+    - match: PathPrefix(`/ktcloud-msa/user-api`)
       kind: Rule
-      priority: 1
+      priority: 200
       services:
-        - name: {{ .Values.routing.app.serviceName }}
-          namespace: {{ .Values.routing.app.namespace }}
-          port: {{ .Values.routing.app.port }}
+        - name: {{ .Values.routing.bff.serviceName }}
+          namespace: {{ .Values.routing.bff.namespace }}
+          port: {{ .Values.routing.bff.port }}
+      middlewares:
+        - name: strip-bff-prefix
+          namespace: {{ .Release.Namespace }}
+
+    # Frontend SPA. No StripPrefix: the Vite app must be built with
+    # base: '/ktcloud-msa/user/' so asset URLs and the router basepath line
+    # up with what the browser actually requests.
+    - match: PathPrefix(`/ktcloud-msa/user`)
+      kind: Rule
+      priority: 100
+      services:
+        - name: {{ .Values.routing.frontend.serviceName }}
+          namespace: {{ .Values.routing.frontend.namespace }}
+          port: {{ .Values.routing.frontend.port }}
