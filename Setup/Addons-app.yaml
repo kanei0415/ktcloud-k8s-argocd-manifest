@@ -85,4 +85,4 @@ spec:
           name: istiod
           namespace: istio-system
           jqPathExpressions:
-            - '.spec.template.spec.containers[]?.env[]? | select(.name == "PLATFORM")'
+            - '.spec.template.spec.containers[0].env[] | select(.name == "PLATFORM")'
