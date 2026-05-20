@@ -55,12 +55,10 @@ kube-prometheus-stack:
     enabled: true
     fullnameOverride: grafana
 
-    # Replace with ExternalSecret reference once an SM secret for grafana exists.
-    # For now the chart will generate a random admin password into a K8s Secret
-    # named `grafana` (key: admin-password). Run:
-    #   kubectl -n kube-prometheus-stack get secret grafana \
-    #     -o jsonpath="{.data.admin-password}" | base64 -d
-    adminPassword: ""
+    # Pinned to a static value so the chart's random-password helper
+    # doesn't re-roll on every render and keep the app OutOfSync.
+    # Replace with an ExternalSecret reference once SM has a grafana secret.
+    adminPassword: "kt-cloud-grafana-admin"
 
     service:
       type: ClusterIP

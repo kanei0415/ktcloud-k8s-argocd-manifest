@@ -34,6 +34,10 @@ spec:
         appname: kafka
         ns: kafka
         wave: "1"
+      - path: Addons/KafkaCluster
+        appname: kafka-cluster
+        ns: kafka
+        wave: "2"
       - path: Addons/KubePrometheusStack
         appname: kube-prometheus-stack
         ns: kube-prometheus-stack
@@ -68,9 +72,17 @@ spec:
           - SkipDryRunOnMissingResource=true
           - ServerSideApply=true
       # istiod re-writes failurePolicy on its own webhooks at runtime, which
-      # otherwise leaves istio-base / istiod permanently OutOfSync.
+      # otherwise leaves istio-base / istiod permanently OutOfSync. The istiod
+      # Deployment also renders a PLATFORM env with value:"" that the
+      # apiserver strips on apply, producing perpetual drift.
       ignoreDifferences:
         - group: admissionregistration.k8s.io
           kind: ValidatingWebhookConfiguration
           jqPathExpressions:
             - '.webhooks[]?.failurePolicy'
+        - group: apps
+          kind: Deployment
+          name: istiod
+          namespace: istio-system
+          jqPathExpressions:
+            - '.spec.template.spec.containers[]?.env[]? | select(.name == "PLATFORM")'
