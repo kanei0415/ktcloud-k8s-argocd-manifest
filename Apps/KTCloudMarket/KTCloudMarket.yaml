@@ -61,15 +61,17 @@ spec:
           - CreateNamespace=true
           - SkipDryRunOnMissingResource=true
           - ServerSideApply=true
-      # ESO mutates ExternalSecret managedFields/status after creation,
-      # leaving the resource permanently OutOfSync against the static chart
-      # render even though the underlying Secret is SecretSynced.
+      # ESO's admission webhook defaults conversionStrategy/decodingStrategy/
+      # metadataPolicy/deletionPolicy on the live ExternalSecret, which the
+      # static chart render doesn't include — these show as drift forever.
       ignoreDifferences:
         - group: external-secrets.io
           kind: ExternalSecret
           jqPathExpressions:
-            - '.status'
-            - '.metadata.creationTimestamp'
-            - '.metadata.generation'
-            - '.metadata.resourceVersion'
-            - '.metadata.uid'
+            - '.spec.data[].remoteRef.conversionStrategy'
+            - '.spec.data[].remoteRef.decodingStrategy'
+            - '.spec.data[].remoteRef.metadataPolicy'
+            - '.spec.dataFrom[].extract.conversionStrategy'
+            - '.spec.dataFrom[].extract.decodingStrategy'
+            - '.spec.dataFrom[].extract.metadataPolicy'
+            - '.spec.target.deletionPolicy'
