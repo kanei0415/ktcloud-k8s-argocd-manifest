@@ -61,3 +61,11 @@ spec:
           - CreateNamespace=true
           - SkipDryRunOnMissingResource=true
           - ServerSideApply=true
+      # ESO mutates ExternalSecret managedFields after creation, leaving the
+      # resource permanently OutOfSync against the static chart render even
+      # though `kind: ExternalSecret\nhealth: SecretSynced` is what we want.
+      ignoreDifferences:
+        - group: external-secrets.io
+          kind: ExternalSecret
+          managedFieldsManagers:
+            - external-secrets
