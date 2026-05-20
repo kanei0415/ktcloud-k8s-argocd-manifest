@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-runtime-config
+  namespace: {{ .Release.Namespace }}
+data:
+  config.js: |
+    window.__APP_CONFIG__ = {{ .Values.runtimeConfig | toJson }};

@@ -14,6 +14,8 @@ spec:
     metadata:
       labels:
         app: {{ .Release.Name }}
+      annotations:
+        checksum/runtime-config: {{ .Values.runtimeConfig | toJson | sha256sum }}
     spec:
       containers:
         - name: {{ .Release.Name }}
@@ -35,3 +37,15 @@ spec:
               port: http
             initialDelaySeconds: 10
             periodSeconds: 20
+          volumeMounts:
+            - name: runtime-config
+              mountPath: /usr/share/nginx/html/config.js
+              subPath: config.js
+              readOnly: true
+      volumes:
+        - name: runtime-config
+          configMap:
+            name: {{ .Release.Name }}-runtime-config
+            items:
+              - key: config.js
+                path: config.js
