@@ -84,5 +84,7 @@ spec:
           kind: Deployment
           name: istiod
           namespace: istio-system
-          jqPathExpressions:
-            - '.spec.template.spec.containers[0].env[] | select(.name == "PLATFORM")'
+          # K8s strips env.value="" on apply, leaving the chart-rendered
+          # PLATFORM entry permanently OutOfSync. Ignore the entire env array.
+          jsonPointers:
+            - /spec/template/spec/containers/0/env
