@@ -9,6 +9,16 @@ spec:
       - /ktcloud-msa/user-api
 ---
 apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: strip-frontend-prefix
+  namespace: {{ .Release.Namespace }}
+spec:
+  stripPrefix:
+    prefixes:
+      - /ktcloud-msa/user
+---
+apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: ktcloud-market
@@ -32,9 +42,10 @@ spec:
         - name: strip-bff-prefix
           namespace: {{ .Release.Namespace }}
 
-    # Frontend SPA. No StripPrefix: the Vite app must be built with
-    # base: '/ktcloud-msa/user/' so asset URLs and the router basepath line
-    # up with what the browser actually requests.
+    # Frontend SPA. StripPrefix removes /ktcloud-msa/user so nginx serves the
+    # app at /. The Vite app must therefore be built with base: '/' (or have
+    # its assets reachable at /assets/...), and the SPA router must handle
+    # rewriting back to /ktcloud-msa/user/* on the client side if needed.
     - match: PathPrefix(`/ktcloud-msa/user`)
       kind: Rule
       priority: 100
@@ -42,3 +53,6 @@ spec:
         - name: {{ .Values.routing.frontend.serviceName }}
           namespace: {{ .Values.routing.frontend.namespace }}
           port: {{ .Values.routing.frontend.port }}
+      middlewares:
+        - name: strip-frontend-prefix
+          namespace: {{ .Release.Namespace }}

@@ -8,7 +8,7 @@ kube-prometheus-stack:
   # Disable Alertmanager (not requested)
   # ---------------------------------------------------------------
   alertmanager:
-    enabled: false
+    enabled: true
 
   # ---------------------------------------------------------------
   # Prometheus
