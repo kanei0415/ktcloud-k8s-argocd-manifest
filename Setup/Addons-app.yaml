@@ -49,6 +49,80 @@ spec:
         appname: traefik
         ns: traefik
         wave: "2"
+
+      # ---------------------------------------------------------------------
+      # Wave 1: operators / controllers that own CRDs the later waves consume.
+      # (SkipDryRunOnMissingResource + selfHeal retry until their CRDs exist,
+      #  so strict ordering across these Applications is best-effort.)
+      # ---------------------------------------------------------------------
+      - path: Addons/Keda
+        appname: keda
+        ns: keda
+        wave: "1"
+      - path: Addons/Gatekeeper
+        appname: gatekeeper
+        ns: gatekeeper-system
+        wave: "1"
+      - path: Addons/Falco
+        appname: falco
+        ns: falco
+        wave: "1"
+      - path: Addons/ChaosMesh
+        appname: chaos-mesh
+        ns: chaos-mesh
+        wave: "1"
+
+      # Wave 1: EFK data plane root (Elasticsearch must exist before Kibana /
+      # Logstash / Fluent Bit / the lifecycle Job point at it).
+      - path: Addons/Logging/Elasticsearch
+        appname: elasticsearch
+        ns: logging
+        wave: "1"
+
+      # Wave 2: logging consumers + mesh observability + monitoring config.
+      - path: Addons/Logging/Logstash
+        appname: logstash
+        ns: logging
+        wave: "2"
+      - path: Addons/Logging/Kibana
+        appname: kibana
+        ns: logging
+        wave: "2"
+      - path: Addons/Logging/FluentBit
+        appname: fluent-bit
+        ns: logging
+        wave: "2"
+      - path: Addons/Kiali
+        appname: kiali
+        ns: istio-system
+        wave: "2"
+      - path: Addons/Jaeger
+        appname: jaeger
+        ns: istio-system
+        wave: "2"
+      - path: Addons/MonitoringConfig
+        appname: monitoring-config
+        ns: kube-prometheus-stack
+        wave: "2"
+
+      # Wave 3: resources that depend on a wave-1/2 control plane being up
+      # (Gatekeeper CRDs, Chaos Mesh CRDs, a live Elasticsearch).
+      - path: Addons/Logging/EsLifecycle
+        appname: es-lifecycle
+        ns: logging
+        wave: "3"
+      - path: Addons/GatekeeperPolicies
+        appname: gatekeeper-policies
+        ns: gatekeeper-system
+        wave: "3"
+      - path: Addons/ChaosExperiments
+        appname: chaos-experiments
+        ns: ktcloud-market-msa
+        wave: "3"
+      - path: Addons/Perf
+        appname: perf-k6
+        ns: ktcloud-market-msa
+        wave: "3"
   template:
     metadata:
       name: '{{appname}}'

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: elasticsearch
+description: 3-node Elasticsearch 8.x cluster for platform logging (raw manifests, no dependencies)
+type: application
+version: 1.0.0
+appVersion: "8.15.3"

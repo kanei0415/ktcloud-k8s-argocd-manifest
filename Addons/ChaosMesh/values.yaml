@@ -1,0 +1,24 @@
+chaos-mesh:
+  chaosDaemon:
+    runtime: containerd
+    socketPath: /run/containerd/containerd.sock
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+
+  dashboard:
+    create: true
+    # securityMode=false disables RBAC token auth on the dashboard UI.
+    # Enable and add proper RBAC in production.
+    securityMode: false
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+
+  controllerManager:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi

@@ -1,0 +1,5 @@
+apiVersion: v2
+name: monitoring-config
+description: Prometheus recording rules, alerting rules, resource quotas, Istio PodMonitor, and Grafana dashboards for the KTCloud MSA platform
+type: application
+version: 1.0.0

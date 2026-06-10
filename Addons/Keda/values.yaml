@@ -1,0 +1,13 @@
+keda:
+  # Watch all namespaces (empty string = cluster-wide)
+  watchNamespace: ""
+
+  resources:
+    operator:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+  prometheus:
+    metricServer:
+      enabled: true

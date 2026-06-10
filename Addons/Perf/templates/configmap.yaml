@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k6-script
+  namespace: ktcloud-market-msa
+data:
+  script.js: |
+    import http from 'k6/http';
+    import { check, sleep } from 'k6';
+    import { Trend } from 'k6/metrics';
+
+    const reqDuration = new Trend('http_req_duration_custom', true);
+
+    export const options = {
+      stages: [
+        { duration: '1m',  target: 50 },  // ramp up to 50 VUs
+        { duration: '1m',  target: 50 },  // hold at 50 VUs
+        { duration: '1m',  target: 0  },  // ramp down to 0
+      ],
+      thresholds: {
+        // 99th percentile must stay under 2 s
+        http_req_duration: ['p(99)<2000'],
+        // fewer than 5 % of requests may fail
+        http_req_failed: ['rate<0.05'],
+      },
+    };
+
+    const BASE_URL =
+      'http://ktcloud-msa-user-api-gateway-release.ktcloud-market-msa.svc.cluster.local';
+
+    export default function () {
+      const res = http.get(`${BASE_URL}/healthz`);
+
+      check(res, {
+        'status is 200': (r) => r.status === 200,
+      });
+
+      reqDuration.add(res.timings.duration);
+
+      sleep(1);
+    }

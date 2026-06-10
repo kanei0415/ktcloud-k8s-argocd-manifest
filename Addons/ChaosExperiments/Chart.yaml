@@ -1,0 +1,5 @@
+apiVersion: v2
+name: chaos-experiments
+description: Chaos Mesh experiment CRs for ktcloud-market-msa (all paused by default)
+type: application
+version: 1.0.0

@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-pipeline
+  labels:
+    app: logstash
+data:
+  logstash.conf: |
+    input {
+      http {
+        port => 8080
+        codec => json
+      }
+    }
+
+    filter {
+      # --- PII / sensitive-data masking ---
+      mutate {
+        # Mask email addresses
+        gsub => [
+          "message", "[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}", "****MASKED****",
+          # Mask 13-19 digit card-like numbers (may be separated by spaces/dashes)
+          "message", "\b(?:\d[\s\-]?){12,18}\d\b", "****MASKED****"
+        ]
+      }
+      # Mask password / token / authorization fields anywhere in the event
+      mutate {
+        replace => {
+          "[password]"      => "****MASKED****"
+          "[token]"         => "****MASKED****"
+          "[authorization]" => "****MASKED****"
+        }
+      }
+
+      # --- Log-level classification ---
+      if [message] =~ /(?i)error|exception/ {
+        mutate { add_field => { "log_level" => "ERROR" } }
+      } else if [message] =~ /(?i)warn/ {
+        mutate { add_field => { "log_level" => "WARN" } }
+      } else {
+        mutate { add_field => { "log_level" => "INFO" } }
+      }
+    }
+
+    output {
+      # Primary per-service index
+      elasticsearch {
+        hosts => ["http://elasticsearch.logging.svc.cluster.local:9200"]
+        index => "%{[kubernetes][labels][app]}-logs-%{+YYYY.MM.dd}"
+      }
+
+      # Secondary audit index for payment / auth services
+      if [kubernetes][labels][app] in ["ktcloud-msa-auth-service", "ktcloud-msa-order-service"] {
+        elasticsearch {
+          hosts => ["http://elasticsearch.logging.svc.cluster.local:9200"]
+          index => "audit-%{[kubernetes][labels][app]}-logs-%{+YYYY.MM.dd}"
+        }
+      }
+    }

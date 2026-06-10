@@ -1,0 +1,20 @@
+gatekeeper:
+  replicas: 1
+
+  auditInterval: 60
+
+  constraintViolationsLimit: 20
+
+  # Small resource footprint — suitable for a dev/staging cluster.
+  # The chart's defaults are used for limits; only requests are pinned here.
+  controllerManager:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+
+  audit:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi

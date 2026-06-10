@@ -1,0 +1,50 @@
+name: argocd-manifest-ci
+
+# Validates the ArgoCD bootstrap + Addons tree: every raw-manifest addon must
+# render, and the whole repo is scanned with Trivy config for IaC misconfig
+# (privileged, hostPath, missing securityContext) before it can reach a cluster.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  render-and-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.16.2
+
+      - name: helm template all raw-manifest addons
+        run: |
+          set -e
+          for chart in $(find Addons -name Chart.yaml -not -path '*/charts/*'); do
+            dir="$(dirname "$chart")"
+            # Raw addons have no dependencies — render them; wrapper charts are
+            # skipped here (their upstream deps are fetched at deploy time).
+            if ! grep -q '^dependencies:' "$chart"; then
+              echo "== rendering $dir =="
+              helm template ci "$dir" >/dev/null
+            fi
+          done
+
+      - name: Trivy config scan (IaC gate)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: config
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          format: table
+
+      - name: Notify Slack #security-report on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          channel-id: "#security-report"
+          slack-message: ":x: argocd-manifest-ci failed @ ${{ github.sha }}"
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}

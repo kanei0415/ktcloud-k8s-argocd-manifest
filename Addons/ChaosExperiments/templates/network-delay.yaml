@@ -1,0 +1,23 @@
+---
+# Wave 3 — Chaos Mesh CRDs must be registered by the operator wave first.
+# experiment.chaos-mesh.org/pause: "true" keeps this experiment PAUSED on
+# every ArgoCD sync. Remove the annotation (or set to "false") to activate.
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: inventory-net-delay
+  namespace: ktcloud-market-msa
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+    experiment.chaos-mesh.org/pause: "true"
+spec:
+  action: delay
+  mode: all
+  selector:
+    namespaces:
+      - ktcloud-market-msa
+    labelSelectors:
+      app: ktcloud-msa-inventory-service-release
+  delay:
+    latency: 200ms
+  duration: 60s

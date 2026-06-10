@@ -1,0 +1,35 @@
+# On-demand run:
+#   kubectl create job --from=cronjob/k6-load-test k6-manual-$(date +%s) \
+#     -n ktcloud-market-msa
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: k6-load-test
+  namespace: ktcloud-market-msa
+spec:
+  # Every Monday at 03:00 UTC
+  schedule: "0 3 * * 1"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: k6
+              image: grafana/k6:0.53.0
+              command:
+                - k6
+                - run
+                - /scripts/script.js
+              resources:
+                requests:
+                  cpu: 200m
+                  memory: 256Mi
+              volumeMounts:
+                - name: k6-script
+                  mountPath: /scripts
+          volumes:
+            - name: k6-script
+              configMap:
+                name: k6-script

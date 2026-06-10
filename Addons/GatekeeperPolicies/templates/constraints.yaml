@@ -1,0 +1,40 @@
+---
+# Wave 3 — ConstraintTemplates must be registered before Constraints are created.
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequiredNonRoot
+metadata:
+  name: require-non-root-ktcloud-market-msa
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  enforcementAction: deny
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    namespaces:
+      - ktcloud-market-msa
+    # Scope enforcement to our MSA workloads only. The Bitnami Postgres/Redis
+    # subchart Pods share this namespace but do not run as our non-root UID and
+    # need a writable rootfs, so they are intentionally exempt via this label.
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/part-of: ktcloud-market-msa
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sReadOnlyRootFilesystem
+metadata:
+  name: require-readonly-rootfs-ktcloud-market-msa
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  enforcementAction: deny
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    namespaces:
+      - ktcloud-market-msa
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/part-of: ktcloud-market-msa

@@ -1,0 +1,50 @@
+falco:
+  driver:
+    kind: modern_ebpf
+
+  # JSON output makes log aggregation (EFK / Loki) straightforward
+  falco:
+    json_output: true
+
+  collectors:
+    kubernetes:
+      enabled: true
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+  # ---------------------------------------------------------------------------
+  # Falcosidekick — fan-out security events to external systems
+  # ---------------------------------------------------------------------------
+  falcosidekick:
+    enabled: true
+    config:
+      slack:
+        # TODO: replace with a value from an ExternalSecret (AWS Secrets Manager
+        # secret "falco/slack-webhook") once ESO is wired up in production.
+        # Leave empty here so the chart renders without a real webhook.
+        webhookurl: ""
+        minimumpriority: warning
+
+  # ---------------------------------------------------------------------------
+  # Custom rules — detect unexpected interactive shell spawns in containers
+  # ---------------------------------------------------------------------------
+  customRules:
+    rules-ktcloud.yaml: |-
+      - rule: Terminal Shell in Container
+        desc: >
+          Detects an interactive shell (sh or bash) spawned inside a container,
+          which is unexpected in a production microservice workload.
+        condition: >
+          spawned_process
+          and container
+          and shell_procs
+          and proc.tty != 0
+        output: >
+          Shell spawned in container (user=%user.name container=%container.name
+          image=%container.image.repository:%container.image.tag
+          shell=%proc.name parent=%proc.pname cmdline=%proc.cmdline)
+        priority: WARNING
+        tags: [container, shell, mitre_execution]

@@ -1,0 +1,110 @@
+{{- $lc := "{{" -}}
+{{- $rc := "}}" -}}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: ktcloud-alert-rules
+  namespace: kube-prometheus-stack
+  labels:
+    release: kps
+    prometheus: kps
+spec:
+  groups:
+    - name: ktcloud.msa.alerts
+      rules:
+        # SLA: Error rate must remain below 5% over any 5-minute window.
+        # Uses the pre-computed recording rule for efficiency.
+        - alert: HighErrorRate
+          expr: service:http_error_rate:ratio5m > 0.05
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High HTTP error rate for {{ $lc }} $labels.application {{ $rc }}"
+            description: >
+              Service {{ $lc }} $labels.application {{ $rc }} has a 5-minute HTTP 5xx error rate of
+              {{ $lc }} $value | humanizePercentage {{ $rc }}, exceeding the 5% warning threshold.
+
+        # SLA: Error rate above 10% for 5 minutes triggers a critical page.
+        - alert: CriticalErrorRate
+          expr: service:http_error_rate:ratio5m > 0.10
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Critical HTTP error rate for {{ $lc }} $labels.application {{ $rc }}"
+            description: >
+              Service {{ $lc }} $labels.application {{ $rc }} has a 5-minute HTTP 5xx error rate of
+              {{ $lc }} $value | humanizePercentage {{ $rc }}, exceeding the 10% critical threshold.
+              Immediate investigation required.
+
+        # SLA: P99 response latency must stay below 2 seconds.
+        - alert: HighP99Latency
+          expr: service:http_request_latency:p99_5m > 2
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High P99 latency for {{ $lc }} $labels.application {{ $rc }}"
+            description: >
+              Service {{ $lc }} $labels.application {{ $rc }} P99 request latency is
+              {{ $lc }} $value | humanizeDuration {{ $rc }},
+              exceeding the 2-second SLA threshold.
+
+        # Operational: any pod stuck in CrashLoopBackOff for 2+ minutes in the MSA namespace.
+        - alert: PodCrashLooping
+          expr: >
+            max by (namespace, pod) (
+              kube_pod_container_status_waiting_reason{
+                reason="CrashLoopBackOff",
+                namespace="ktcloud-market-msa"
+              }
+            ) > 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Pod {{ $lc }} $labels.pod {{ $rc }} is CrashLoopBackOff"
+            description: >
+              Pod {{ $lc }} $labels.pod {{ $rc }} in namespace {{ $lc }} $labels.namespace {{ $rc }}
+              has been in CrashLoopBackOff for more than 2 minutes. Check logs immediately.
+
+        # Anomaly detection: error rate is >3x (i.e. >200% increase) compared to same window 1h ago,
+        # AND still above the minimum noise floor of 2% (avoids alerting on 0->tiny transitions).
+        - alert: ErrorRateAnomaly
+          expr: >
+            (
+              service:http_error_rate:ratio5m
+              > 3 * (service:http_error_rate:ratio5m offset 1h)
+            )
+            and
+            service:http_error_rate:ratio5m > 0.02
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Anomalous error rate spike for {{ $lc }} $labels.application {{ $rc }}"
+            description: >
+              Service {{ $lc }} $labels.application {{ $rc }} error rate
+              ({{ $lc }} $value | humanizePercentage {{ $rc }}) is more than 3x its value from
+              1 hour ago, sustained for 10 minutes. Possible deployment regression or dependency failure.
+
+        # Anomaly detection: aggregate request volume (traffic / log proxy) is >3x the hourly baseline.
+        # Uses raw metric (not recording rule) so the namespace filter is preserved.
+        - alert: LogVolumeSpike
+          expr: >
+            sum(
+              rate(http_server_requests_seconds_count{namespace="ktcloud-market-msa"}[5m])
+            )
+            > 3 * sum(
+              rate(http_server_requests_seconds_count{namespace="ktcloud-market-msa"}[5m] offset 1h)
+            )
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Traffic/log volume spike across MSA namespace"
+            description: >
+              Aggregate request rate across ktcloud-market-msa is more than 3x the level
+              seen 1 hour ago, sustained for 5 minutes. Possible traffic surge, scrape
+              misconfiguration, or log flooding.

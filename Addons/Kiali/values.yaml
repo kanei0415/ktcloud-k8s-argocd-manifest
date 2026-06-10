@@ -1,0 +1,26 @@
+kiali-server:
+  auth:
+    strategy: anonymous
+
+  deployment:
+    ingress:
+      enabled: false
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+
+  external_services:
+    prometheus:
+      url: http://kps-prometheus.kube-prometheus-stack:9090
+
+    grafana:
+      enabled: true
+      url: http://grafana.kube-prometheus-stack
+
+    tracing:
+      enabled: true
+      in_cluster_url: http://jaeger-query.istio-system:16686
+
+  server:
+    web_root: /kiali

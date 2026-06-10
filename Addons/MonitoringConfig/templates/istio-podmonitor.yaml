@@ -1,0 +1,35 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: istio-proxy
+  # Place in same namespace as the Prometheus operator so the nil podMonitorSelector
+  # (cluster-wide discovery) picks it up without a namespace selector override.
+  namespace: kube-prometheus-stack
+  labels:
+    release: kps
+spec:
+  # Scrape Envoy sidecar metrics from all pods in the MSA namespace.
+  # The sidecar exposes Prometheus stats on port 15090 at /stats/prometheus.
+  namespaceSelector:
+    matchNames:
+      - ktcloud-market-msa
+  # Target any pod that has the Istio sidecar injected (indicated by the
+  # security.istio.io/tlsMode label set by the sidecar injector).
+  selector:
+    matchExpressions:
+      - key: security.istio.io/tlsMode
+        operator: Exists
+  podMetricsEndpoints:
+    - port: http-envoy-prom
+      path: /stats/prometheus
+      targetPort: 15090
+      # Envoy stats can be verbose; relabel to keep only the metrics used
+      # by the infra and perf dashboards (istio_requests_total, plus container
+      # metrics already covered by cAdvisor — kept here for completeness).
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_name]
+          targetLabel: pod
+        - sourceLabels: [__meta_kubernetes_namespace]
+          targetLabel: namespace
+        - sourceLabels: [__meta_kubernetes_pod_label_app]
+          targetLabel: application

@@ -33,8 +33,22 @@ istiod:
 
   meshConfig:
     accessLogFile: /dev/stdout
-    enableTracing: false
+    enableTracing: true
     defaultConfig:
       proxyMetadata: {}
+      tracing:
+        # Demo samples 100% so every request is traceable (and any P99-breach
+        # request can be inspected immediately). Lower to ~1-5% in production.
+        sampling: 100.0
     outboundTrafficPolicy:
       mode: ALLOW_ANY
+    # Wire the Envoy sidecars' distributed tracing to the Jaeger all-in-one
+    # (Addons/Jaeger) over the Zipkin-compatible collector port.
+    extensionProviders:
+      - name: jaeger
+        zipkin:
+          service: jaeger-collector.istio-system.svc.cluster.local
+          port: 9411
+    defaultProviders:
+      tracing:
+        - jaeger

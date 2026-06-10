@@ -1,0 +1,43 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: ktcloud-recording-rules
+  namespace: kube-prometheus-stack
+  labels:
+    release: kps
+    prometheus: kps
+spec:
+  groups:
+    - name: ktcloud.msa.recording
+      interval: 30s
+      rules:
+        # Total request rate per service (all status codes), averaged over 5m window
+        - record: service:http_request_rate:rate5m
+          expr: |
+            sum by (application) (
+              rate(http_server_requests_seconds_count[5m])
+            )
+
+        # 5-minute average error-rate ratio per service (5xx / total).
+        # Pre-aggregated for Grafana performance — avoids recomputing at dashboard query time.
+        # Division-by-zero is safe: if total == 0 the rule evaluates to no series.
+        - record: service:http_error_rate:ratio5m
+          expr: |
+            sum by (application) (
+              rate(http_server_requests_seconds_count{status=~"5.."}[5m])
+            )
+            /
+            sum by (application) (
+              rate(http_server_requests_seconds_count[5m])
+            )
+
+        # P99 request latency per service, computed from the histogram bucket.
+        # Requires percentiles-histogram=true on the Spring Boot Micrometer exporter.
+        - record: service:http_request_latency:p99_5m
+          expr: |
+            histogram_quantile(
+              0.99,
+              sum by (application, le) (
+                rate(http_server_requests_seconds_bucket[5m])
+              )
+            )

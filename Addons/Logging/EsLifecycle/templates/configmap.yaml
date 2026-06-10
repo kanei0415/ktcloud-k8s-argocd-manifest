@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: es-lifecycle
+  labels:
+    app: es-lifecycle
+data:
+  ilm-policy.json: |
+    {
+      "policy": {
+        "phases": {
+          "hot": {
+            "min_age": "0ms",
+            "actions": {
+              "rollover": {
+                "max_age": "7d",
+                "max_size": "20gb"
+              }
+            }
+          },
+          "warm": {
+            "min_age": "7d",
+            "actions": {
+              "allocate": {
+                "number_of_replicas": 1
+              },
+              "shrink": {
+                "number_of_shards": 1
+              }
+            }
+          },
+          "delete": {
+            "min_age": "90d",
+            "actions": {
+              "delete": {}
+            }
+          }
+        }
+      }
+    }
+
+  index-template.json: |
+    {
+      "index_patterns": ["*-logs-*"],
+      "template": {
+        "settings": {
+          "number_of_shards": 5,
+          "number_of_replicas": 1,
+          "index.lifecycle.name": "ktcloud-logs-ilm"
+        }
+      }
+    }

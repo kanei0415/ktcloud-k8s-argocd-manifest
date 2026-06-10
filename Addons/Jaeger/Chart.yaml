@@ -1,0 +1,6 @@
+apiVersion: v2
+name: jaeger
+description: Jaeger all-in-one distributed tracing backend for Istio
+type: application
+version: 1.0.0
+appVersion: "1.62.0"

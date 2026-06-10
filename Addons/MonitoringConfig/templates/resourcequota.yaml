@@ -1,0 +1,49 @@
+---
+# ResourceQuota for the application microservice namespace.
+# Caps total workload resource consumption to prevent runaway pods from
+# starving the cluster. Sized for 5 services × ~10 pods each at typical load.
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: ktcloud-market-msa-quota
+  namespace: ktcloud-market-msa
+spec:
+  hard:
+    requests.cpu: "8"
+    requests.memory: 16Gi
+    limits.cpu: "16"
+    limits.memory: 32Gi
+    pods: "60"
+---
+# ResourceQuota for the monitoring namespace.
+# Isolates kube-prometheus-stack resource consumption from application workloads
+# so monitoring survives even under app-side resource pressure.
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: monitoring-quota
+  namespace: kube-prometheus-stack
+spec:
+  hard:
+    requests.cpu: "4"
+    requests.memory: 10Gi
+    limits.cpu: "8"
+    limits.memory: 16Gi
+---
+# LimitRange for the application microservice namespace.
+# Sets sane per-container defaults so services without explicit resource specs
+# are still bounded. Prevents unbounded containers from hitting the quota ceiling unexpectedly.
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: ktcloud-market-msa-limits
+  namespace: ktcloud-market-msa
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: "1"
+        memory: 1Gi
+      defaultRequest:
+        cpu: 100m
+        memory: 256Mi

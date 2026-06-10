@@ -1,0 +1,82 @@
+---
+# Wave 3 — applied after Gatekeeper CRDs are registered by the operator wave.
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8srequirednonroot
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sRequiredNonRoot
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8srequirednonroot
+
+        violation[{"msg": msg}] {
+          # Pod-level check
+          input.review.object.kind == "Pod"
+          not pod_non_root
+          msg := sprintf("Pod %v must set securityContext.runAsNonRoot: true at pod or all container level", [input.review.object.metadata.name])
+        }
+
+        pod_non_root {
+          input.review.object.spec.securityContext.runAsNonRoot == true
+        }
+
+        pod_non_root {
+          # All regular containers explicitly set runAsNonRoot
+          count(input.review.object.spec.containers) > 0
+          all_containers_non_root
+          not has_init_containers_violating
+        }
+
+        all_containers_non_root {
+          container := input.review.object.spec.containers[_]
+          container.securityContext.runAsNonRoot != true
+          count({c | c := input.review.object.spec.containers[_]; c.securityContext.runAsNonRoot == true}) == count(input.review.object.spec.containers)
+        }
+
+        all_containers_non_root {
+          every container in input.review.object.spec.containers {
+            container.securityContext.runAsNonRoot == true
+          }
+        }
+
+        has_init_containers_violating {
+          init := input.review.object.spec.initContainers[_]
+          init.securityContext.runAsNonRoot != true
+        }
+---
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8sreadonlyrootfilesystem
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sReadOnlyRootFilesystem
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8sreadonlyrootfilesystem
+
+        violation[{"msg": msg}] {
+          input.review.object.kind == "Pod"
+          container := input.review.object.spec.containers[_]
+          not container.securityContext.readOnlyRootFilesystem == true
+          msg := sprintf("Container %v in Pod %v must set securityContext.readOnlyRootFilesystem: true", [container.name, input.review.object.metadata.name])
+        }
+
+        violation[{"msg": msg}] {
+          input.review.object.kind == "Pod"
+          container := input.review.object.spec.initContainers[_]
+          not container.securityContext.readOnlyRootFilesystem == true
+          msg := sprintf("initContainer %v in Pod %v must set securityContext.readOnlyRootFilesystem: true", [container.name, input.review.object.metadata.name])
+        }

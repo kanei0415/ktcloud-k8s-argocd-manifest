@@ -1,0 +1,54 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: es-lifecycle-init
+  labels:
+    app: es-lifecycle
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  backoffLimit: 6
+  template:
+    metadata:
+      labels:
+        app: es-lifecycle
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: es-lifecycle-init
+          image: curlimages/curl:8.10.1
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              ES_URL="http://elasticsearch.logging.svc.cluster.local:9200"
+
+              echo "Waiting for Elasticsearch to be ready..."
+              until curl -sf "${ES_URL}/_cluster/health?wait_for_status=yellow&timeout=5s"; do
+                echo "Elasticsearch not ready, retrying in 5s..."
+                sleep 5
+              done
+              echo "Elasticsearch is ready."
+
+              echo "Applying ILM policy..."
+              curl -sf -X PUT "${ES_URL}/_ilm/policy/ktcloud-logs-ilm" \
+                -H "Content-Type: application/json" \
+                --data-binary @/etc/es-lifecycle/ilm-policy.json
+              echo ""
+
+              echo "Applying index template..."
+              curl -sf -X PUT "${ES_URL}/_index_template/ktcloud-logs-template" \
+                -H "Content-Type: application/json" \
+                --data-binary @/etc/es-lifecycle/index-template.json
+              echo ""
+
+              echo "ILM policy and index template applied successfully."
+          volumeMounts:
+            - name: config
+              mountPath: /etc/es-lifecycle
+      volumes:
+        - name: config
+          configMap:
+            name: es-lifecycle

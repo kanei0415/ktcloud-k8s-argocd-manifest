@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kibana
+  labels:
+    app: kibana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kibana
+  template:
+    metadata:
+      labels:
+        app: kibana
+    spec:
+      containers:
+        - name: kibana
+          image: docker.elastic.co/kibana/kibana:8.15.3
+          ports:
+            - name: http
+              containerPort: 5601
+          env:
+            - name: ELASTICSEARCH_HOSTS
+              value: "http://elasticsearch.logging.svc.cluster.local:9200"
+            - name: SERVER_BASEPATH
+              value: "/kibana"
+            - name: SERVER_REWRITEBASEPATH
+              value: "true"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 1Gi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /kibana/api/status
+              port: 5601
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 6

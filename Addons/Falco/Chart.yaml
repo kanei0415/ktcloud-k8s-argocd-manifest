@@ -1,0 +1,11 @@
+apiVersion: v2
+name: falco
+description: Falco runtime security with eBPF driver and Falcosidekick
+type: application
+version: 1.0.0
+appVersion: "0.40.0"
+
+dependencies:
+  - name: falco
+    version: "4.x"
+    repository: https://falcosecurity.github.io/charts

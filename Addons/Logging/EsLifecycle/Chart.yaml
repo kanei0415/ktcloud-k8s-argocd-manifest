@@ -1,0 +1,6 @@
+apiVersion: v2
+name: es-lifecycle
+description: One-shot Job to bootstrap Elasticsearch ILM policy and index template (raw manifests, no dependencies)
+type: application
+version: 1.0.0
+appVersion: "8.15.3"

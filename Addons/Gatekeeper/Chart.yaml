@@ -1,0 +1,11 @@
+apiVersion: v2
+name: gatekeeper
+description: OPA Gatekeeper policy admission controller
+type: application
+version: 1.0.0
+appVersion: "3.17.0"
+
+dependencies:
+  - name: gatekeeper
+    version: "3.17.x"
+    repository: https://open-policy-agent.github.io/gatekeeper/charts
