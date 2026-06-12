@@ -1,1 +1,4 @@
 Charts/*/charts
+# macOS
+.DS_Store
+**/.DS_Store

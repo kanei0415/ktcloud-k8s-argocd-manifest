@@ -4,11 +4,11 @@ metadata:
   name: ktcloud-msa-frontend-release
   namespace: argocd
 spec:
-  project: default
+  project: market
   sources:
     - repoURL: https://github.com/kanei0415/ktcloud-k8s-argocd-manifest.git
       targetRevision: HEAD
-      path: Apps/KTCloudMarket/Frontend
+      path: applications/charts/frontend
       helm:
         valueFiles:
           - $values/ktcloud-msa-frontend/values-release.yaml

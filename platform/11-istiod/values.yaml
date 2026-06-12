@@ -43,7 +43,7 @@ istiod:
     outboundTrafficPolicy:
       mode: ALLOW_ANY
     # Wire the Envoy sidecars' distributed tracing to the Jaeger all-in-one
-    # (Addons/Jaeger) over the Zipkin-compatible collector port.
+    # (platform/31-jaeger) over the Zipkin-compatible collector port.
     extensionProviders:
       - name: jaeger
         zipkin:

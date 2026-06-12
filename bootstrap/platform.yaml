@@ -1,51 +1,51 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: addons-app
+  name: platform
   namespace: argocd
 spec:
   generators:
   - list:
       elements:
       # Wave 0: storage layer + Istio CRDs (everything else may depend on these)
-      - path: Addons/AwsEbsCsi
+      - path: platform/05-aws-ebs-csi
         appname: aws-ebs-csi-driver
         ns: kube-system
         wave: "0"
-      - path: Addons/Istio/Base
+      - path: platform/10-istio-base
         appname: istio-base
         ns: istio-system
         wave: "0"
 
       # Wave 1: control planes / operators that need CRDs from wave 0 (or bundle their own)
-      - path: Addons/Istio/Istiod
+      - path: platform/11-istiod
         appname: istiod
         ns: istio-system
         wave: "1"
-      - path: Addons/ExternalSecrets
+      - path: platform/40-external-secrets
         appname: external-secrets
         ns: external-secrets
         wave: "1"
-      - path: Addons/ClusterAutoscaler
+      - path: platform/20-cluster-autoscaler
         appname: cluster-autoscaler
         ns: kube-system
         wave: "1"
-      - path: Addons/Kafka
+      - path: platform/40-kafka-operator
         appname: kafka
         ns: kafka
         wave: "1"
-      - path: Addons/KafkaCluster
+      - path: platform/50-kafka-cluster
         appname: kafka-cluster
         ns: kafka
         wave: "2"
-      - path: Addons/KubePrometheusStack
+      - path: platform/30-kube-prometheus-stack
         appname: kube-prometheus-stack
         ns: kube-prometheus-stack
         wave: "1"
 
       # Wave 2: edge (ALB-fronted ingress). Traefik depends on the
       # ServiceMonitor CRD from kube-prometheus-stack (wave 1).
-      - path: Addons/Traefik
+      - path: platform/13-traefik
         appname: traefik
         ns: traefik
         wave: "2"
@@ -55,71 +55,71 @@ spec:
       # (SkipDryRunOnMissingResource + selfHeal retry until their CRDs exist,
       #  so strict ordering across these Applications is best-effort.)
       # ---------------------------------------------------------------------
-      - path: Addons/Keda
+      - path: platform/40-keda
         appname: keda
         ns: keda
         wave: "1"
-      - path: Addons/Gatekeeper
+      - path: platform/40-gatekeeper
         appname: gatekeeper
         ns: gatekeeper-system
         wave: "1"
-      - path: Addons/Falco
+      - path: platform/40-falco
         appname: falco
         ns: falco
         wave: "1"
-      - path: Addons/ChaosMesh
+      - path: platform/40-chaos-mesh
         appname: chaos-mesh
         ns: chaos-mesh
         wave: "1"
 
       # Wave 1: EFK data plane root (Elasticsearch must exist before Kibana /
       # Logstash / Fluent Bit / the lifecycle Job point at it).
-      - path: Addons/Logging/Elasticsearch
+      - path: platform/30-elasticsearch
         appname: elasticsearch
         ns: logging
         wave: "1"
 
       # Wave 2: logging consumers + mesh observability + monitoring config.
-      - path: Addons/Logging/Logstash
+      - path: platform/31-logstash
         appname: logstash
         ns: logging
         wave: "2"
-      - path: Addons/Logging/Kibana
+      - path: platform/31-kibana
         appname: kibana
         ns: logging
         wave: "2"
-      - path: Addons/Logging/FluentBit
+      - path: platform/31-fluent-bit
         appname: fluent-bit
         ns: logging
         wave: "2"
-      - path: Addons/Kiali
+      - path: platform/31-kiali
         appname: kiali
         ns: istio-system
         wave: "2"
-      - path: Addons/Jaeger
+      - path: platform/31-jaeger
         appname: jaeger
         ns: istio-system
         wave: "2"
-      - path: Addons/MonitoringConfig
+      - path: platform/31-monitoring-config
         appname: monitoring-config
         ns: kube-prometheus-stack
         wave: "2"
 
       # Wave 3: resources that depend on a wave-1/2 control plane being up
       # (Gatekeeper CRDs, Chaos Mesh CRDs, a live Elasticsearch).
-      - path: Addons/Logging/EsLifecycle
+      - path: platform/91-es-lifecycle
         appname: es-lifecycle
         ns: logging
         wave: "3"
-      - path: Addons/GatekeeperPolicies
+      - path: platform/91-gatekeeper-policies
         appname: gatekeeper-policies
         ns: gatekeeper-system
         wave: "3"
-      - path: Addons/ChaosExperiments
+      - path: platform/91-chaos-experiments
         appname: chaos-experiments
         ns: ktcloud-market-msa
         wave: "3"
-      - path: Addons/Perf
+      - path: platform/91-perf-k6
         appname: perf-k6
         ns: ktcloud-market-msa
         wave: "3"
@@ -129,7 +129,7 @@ spec:
       annotations:
         argocd.argoproj.io/sync-wave: '{{wave}}'
     spec:
-      project: default
+      project: platform
       source:
         repoURL: "https://github.com/kanei0415/ktcloud-k8s-argocd-manifest.git"
         targetRevision: HEAD

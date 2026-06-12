@@ -1,20 +1,20 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: apps-app
+  name: applications
   namespace: argocd
 spec:
   generators:
   - list:
       elements:
-      - path: Apps/KTCloudMarket
+      - path: applications
         appname: ktcloud-market
         ns: ktcloud-market
   template:
     metadata:
       name: '{{appname}}'
     spec:
-      project: default
+      project: market
       source:
         repoURL: "https://github.com/kanei0415/ktcloud-k8s-argocd-manifest.git"
         targetRevision: HEAD

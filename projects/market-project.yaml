@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: market
+  namespace: argocd
+  # Application layer: the KTCloudMarket microservices + frontend rendered by
+  # the bootstrap/applications.yaml ApplicationSet. Permissive whitelist to
+  # preserve the previous `project: default` behaviour.
+spec:
+  description: KTCloudMarket microservices and frontend
+  sourceRepos:
+    - '*'
+  destinations:
+    - server: '*'
+      namespace: '*'
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'

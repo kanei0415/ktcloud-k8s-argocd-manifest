@@ -35,7 +35,7 @@ spec:
     metadata:
       name: '{{ app }}-{{ environment }}'
     spec:
-      project: default
+      project: market
       sources:
         - repoURL: https://github.com/ktcloud-msa/ktcloud-msa-chart.git
           targetRevision: '{{ revision }}'

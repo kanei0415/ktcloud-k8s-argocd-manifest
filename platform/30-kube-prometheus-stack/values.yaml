@@ -4,25 +4,12 @@ kube-prometheus-stack:
   crds:
     enabled: true
 
-  # ---------------------------------------------------------------
-  # Alertmanager — Slack #ops-alert + severity-based routing.
-  #   * warning  -> Slack #ops-alert
-  #   * critical -> Slack #ops-alert + Slack #incident + email (dual channel)
-  # The Slack webhook and SMTP creds are placeholders here; in production they
-  # are mounted from an ESO-managed Secret (see alertmanagerSpec note below) so
-  # no secret material is committed to Git.
-  # ---------------------------------------------------------------
   alertmanager:
     enabled: true
     config:
       global:
         resolve_timeout: 5m
-        # Replace via ESO: a Secret key projected as slack_api_url_file is the
-        # production-safe form. Inline placeholder kept so the config validates.
-        slack_api_url: "https://hooks.slack.com/services/REPLACE_VIA_ESO"
-        smtp_smarthost: "smtp.ktcloud.example.com:587"
-        smtp_from: "alertmanager@ktcloud.example.com"
-        smtp_require_tls: true
+        slack_api_url: "tmp"
       route:
         group_by: ["alertname", "application", "namespace"]
         group_wait: 30s
@@ -30,12 +17,10 @@ kube-prometheus-stack:
         repeat_interval: 4h
         receiver: "slack-ops"
         routes:
-          # critical -> dual channel (Slack #ops-alert + #incident) + email
           - matchers:
               - 'severity = "critical"'
             receiver: "critical-dual"
             continue: false
-          # warning -> Slack #ops-alert only
           - matchers:
               - 'severity = "warning"'
             receiver: "slack-ops"
@@ -44,6 +29,7 @@ kube-prometheus-stack:
         - name: "slack-ops"
           slack_configs:
             - channel: "#ops-alert"
+              api_url: "tmp"
               send_resolved: true
               title: '[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}'
               text: >-
@@ -53,33 +39,27 @@ kube-prometheus-stack:
         - name: "critical-dual"
           slack_configs:
             - channel: "#ops-alert"
+              api_url: "tmp"
               send_resolved: true
               title: '[CRITICAL] {{ .CommonLabels.alertname }}'
               text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
             - channel: "#incident"
+              api_url: "tmp"
               send_resolved: true
               title: '[CRITICAL] {{ .CommonLabels.alertname }} — incident bridge'
               text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
           email_configs:
-            - to: "oncall@ktcloud.example.com"
+            - to: "kimyoungho0415@gmail.com"
               send_resolved: true
-      # Escalation: outside business hours, critical alerts repeat more
-      # aggressively (handled by the shorter repeat_interval on this child route).
       templates:
         - "/etc/alertmanager/config/*.tmpl"
 
-  # ---------------------------------------------------------------
-  # Prometheus
-  # ---------------------------------------------------------------
   prometheus:
     enabled: true
     prometheusSpec:
       retention: 7d
       retentionSize: "9GiB"
 
-      # Pick up every ServiceMonitor / PodMonitor in the cluster regardless
-      # of label, so Traefik, Istio, Kafka, etc. are scraped without us
-      # adding chart-specific matchers.
       serviceMonitorSelectorNilUsesHelmValues: false
       podMonitorSelectorNilUsesHelmValues: false
       ruleSelectorNilUsesHelmValues: false
@@ -106,16 +86,10 @@ kube-prometheus-stack:
     service:
       type: ClusterIP
 
-  # ---------------------------------------------------------------
-  # Grafana — served under /grafana sub-path through Traefik
-  # ---------------------------------------------------------------
   grafana:
     enabled: true
     fullnameOverride: grafana
 
-    # Pinned to a static value so the chart's random-password helper
-    # doesn't re-roll on every render and keep the app OutOfSync.
-    # Replace with an ExternalSecret reference once SM has a grafana secret.
     adminPassword: "kt-cloud-grafana-admin"
 
     service:
@@ -128,9 +102,6 @@ kube-prometheus-stack:
       size: 5Gi
       accessModes: ["ReadWriteOnce"]
 
-    # Sub-path serving so http://<alb>/grafana works through Traefik
-    # without a stripPrefix middleware. Grafana itself rewrites every
-    # link / asset URL to include /grafana when serve_from_sub_path=true.
     grafana.ini:
       server:
         root_url: "%(protocol)s://%(domain)s/grafana"
@@ -156,11 +127,6 @@ kube-prometheus-stack:
         cpu: 500m
         memory: 512Mi
 
-  # ---------------------------------------------------------------
-  # kube-state-metrics / node-exporter (left default; cluster autoscaler,
-  # kubelet, scheduler, controller-manager scrapes inherited from the
-  # chart's defaults).
-  # ---------------------------------------------------------------
   kube-state-metrics:
     resources:
       requests:

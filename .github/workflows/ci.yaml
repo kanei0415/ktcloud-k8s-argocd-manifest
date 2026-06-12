@@ -1,6 +1,6 @@
 name: argocd-manifest-ci
 
-# Validates the ArgoCD bootstrap + Addons tree: every raw-manifest addon must
+# Validates the ArgoCD bootstrap + platform tree: every raw-manifest addon must
 # render, and the whole repo is scanned with Trivy config for IaC misconfig
 # (privileged, hostPath, missing securityContext) before it can reach a cluster.
 on:
@@ -21,7 +21,7 @@ jobs:
       - name: helm template all raw-manifest addons
         run: |
           set -e
-          for chart in $(find Addons -name Chart.yaml -not -path '*/charts/*'); do
+          for chart in $(find platform -name Chart.yaml -not -path '*/charts/*'); do
             dir="$(dirname "$chart")"
             # Raw addons have no dependencies — render them; wrapper charts are
             # skipped here (their upstream deps are fetched at deploy time).
