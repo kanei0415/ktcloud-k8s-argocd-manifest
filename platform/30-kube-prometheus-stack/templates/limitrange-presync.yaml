@@ -1,0 +1,38 @@
+# LimitRange for the kube-prometheus-stack namespace, applied as an ArgoCD
+# PreSync hook with a negative hook-weight so it lands BEFORE the chart's
+# admission webhook cert-gen Job (`kps-admission-create`/`-patch`, also PreSync,
+# default weight 0).
+#
+# WHY THIS EXISTS:
+#   The monitoring namespace carries a ResourceQuota (monitoring-quota) that
+#   constrains requests/limits for cpu+memory. The Kubernetes quota admission
+#   controller then REJECTS any pod that does not explicitly declare those
+#   resources. The upstream kube-webhook-certgen image used by the cert-gen
+#   hook sets no resources, so without a defaulting LimitRange its pod is denied
+#   ("must specify limits.cpu ..."), the Job never produces a pod, the PreSync
+#   hook hangs forever, and the Operator CRDs (ServiceMonitor / PrometheusRule)
+#   are never installed — which in turn blocks every dependent app that renders
+#   a ServiceMonitor (all the microservices). This LimitRange injects defaults
+#   so those resource-less pods satisfy the quota.
+#
+# It is a hook (not a plain manifest) because plain manifests are applied in the
+# main Sync phase, i.e. AFTER PreSync hooks — too late for the cert-gen Job.
+# No hook-delete-policy is set, so it persists after sync and keeps defaulting
+# the later Prometheus/Grafana pods too.
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: monitoring-limits
+  namespace: kube-prometheus-stack
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-weight: "-10"
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: 500m
+        memory: 512Mi
+      defaultRequest:
+        cpu: 50m
+        memory: 128Mi

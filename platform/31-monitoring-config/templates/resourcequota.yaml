@@ -47,26 +47,8 @@ spec:
       defaultRequest:
         cpu: 100m
         memory: 256Mi
----
-# LimitRange for the monitoring namespace.
-# REQUIRED companion to monitoring-quota above: because that ResourceQuota
-# constrains requests/limits for cpu+memory, the quota admission controller
-# REJECTS any pod that does not declare them. Several kube-prometheus-stack
-# components — notably the `kps-admission-create`/`-patch` webhook-certgen hook
-# Jobs (upstream image sets no resources) — would otherwise be denied at pod
-# creation, leaving the PreSync hook (and therefore the Operator CRDs) stuck
-# forever. This LimitRange injects defaults so those pods satisfy the quota.
-apiVersion: v1
-kind: LimitRange
-metadata:
-  name: monitoring-limits
-  namespace: kube-prometheus-stack
-spec:
-  limits:
-    - type: Container
-      default:
-        cpu: 500m
-        memory: 512Mi
-      defaultRequest:
-        cpu: 50m
-        memory: 128Mi
+# NOTE: the LimitRange for the kube-prometheus-stack namespace is intentionally
+# NOT here. It must exist BEFORE the kube-prometheus-stack admission cert-gen
+# PreSync hook runs (wave 1), but this monitoring-config app is wave 2 — too
+# late. It is therefore defined as a PreSync hook (hook-weight -10) inside the
+# 30-kube-prometheus-stack addon so ArgoCD applies it before the cert-gen Job.
