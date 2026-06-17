@@ -32,3 +32,27 @@ spec:
     retention.ms: "604800000"      # 7 days
     cleanup.policy: delete
     min.insync.replicas: "1"
+---
+# Event Sourcing store for the order service. Unlike the two saga topics above
+# (transient command/result events, deleted after 7 days), this topic is the
+# durable source of truth for order aggregate state: every order state change
+# (OrderCreated, InventoryReserved, OrderConfirmed, OrderCancelled, ...) is
+# appended here keyed by orderId. The order service rebuilds aggregate state by
+# replaying these events. Retention is effectively infinite and the topic is
+# log-compacted so the latest event per key is always retained.
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: order-events
+  namespace: kafka
+  labels:
+    strimzi.io/cluster: kafka
+spec:
+  partitions: 3
+  replicas: 1
+  config:
+    retention.ms: "-1"                 # never time-expire the event log
+    cleanup.policy: compact
+    min.compaction.lag.ms: "86400000"  # keep >=1 day of raw history before compaction
+    segment.ms: "86400000"
+    min.insync.replicas: "1"

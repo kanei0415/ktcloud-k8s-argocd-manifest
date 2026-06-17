@@ -1,0 +1,64 @@
+# =============================================================================
+# Role: 운영자 / operator  --  deploy/restart workloads in ktcloud-market-msa
+# =============================================================================
+# Operators can modify (update/patch) Deployments, ReplicaSets and Argo
+# Rollouts in the application namespace so they can ship releases and perform a
+# `kubectl rollout restart` (which is a PATCH on the Deployment template). They
+# get read access to the supporting objects (pods/logs/services/configmaps) but
+# NOT create/delete of arbitrary resources and NOT secrets.
+#
+# Least privilege: this is a namespaced Role + RoleBinding scoped to
+# ktcloud-market-msa (NOT a ClusterRole).
+#
+# Subjects are cert Organization groups: issue with /O=ktcloud:operators/CN=<user>.
+# =============================================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ktcloud-operator-deployer
+  namespace: ktcloud-market-msa
+  labels:
+    app.kubernetes.io/part-of: rbac-human-roles
+    rbac.ktcloud.io/role: operator
+rules:
+  # Modify Deployments / ReplicaSets. update+patch covers image bumps, scaling
+  # and `kubectl rollout restart` (which patches a restartedAt annotation).
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - deployments/scale
+      - replicasets
+    verbs: ["get", "list", "watch", "update", "patch"]
+  # Argo Rollouts (canary / blue-green) are the primary deploy unit here.
+  - apiGroups: ["argoproj.io"]
+    resources:
+      - rollouts
+      - rollouts/scale
+    verbs: ["get", "list", "watch", "update", "patch"]
+  # Supporting objects: read-only so operators can inspect what they deploy.
+  - apiGroups: [""]
+    resources:
+      - pods
+      - pods/log
+      - services
+      - configmaps
+      - events
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ktcloud-operator-deployer
+  namespace: ktcloud-market-msa
+  labels:
+    app.kubernetes.io/part-of: rbac-human-roles
+    rbac.ktcloud.io/role: operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ktcloud-operator-deployer
+subjects:
+  # Cert Organization group: /O=ktcloud:operators
+  - apiGroup: rbac.authorization.k8s.io
+    kind: Group
+    name: "ktcloud:operators"

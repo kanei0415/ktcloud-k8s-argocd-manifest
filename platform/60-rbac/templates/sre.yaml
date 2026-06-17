@@ -1,0 +1,34 @@
+# =============================================================================
+# Role: SRE  --  full admin WITHIN the application namespace (Namespace 전체 권한)
+# =============================================================================
+# SREs get the built-in aggregated ClusterRole "admin" but scoped via a
+# RoleBinding to ktcloud-market-msa only. This grants full read/write on
+# resources in that namespace (including secrets, RBAC roles/rolebindings within
+# the namespace) WITHOUT touching cluster-scoped objects.
+#
+# NOTE: cluster-wide infrastructure access for SRE (nodes, PVs, cluster RBAC,
+# other namespaces) is granted separately and intentionally. We deliberately do
+# NOT bind cluster-admin here, to keep blast radius scoped to the application
+# namespace by default.
+#
+# Subjects are cert Organization groups: issue with /O=ktcloud:sre/CN=<user>.
+# =============================================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ktcloud-sre-admin
+  namespace: ktcloud-market-msa
+  labels:
+    app.kubernetes.io/part-of: rbac-human-roles
+    rbac.ktcloud.io/role: sre
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  # Built-in, aggregated ClusterRole shipped by Kubernetes. Used here as the
+  # roleRef of a namespaced RoleBinding -> namespace-scoped admin.
+  kind: ClusterRole
+  name: admin
+subjects:
+  # Cert Organization group: /O=ktcloud:sre
+  - apiGroup: rbac.authorization.k8s.io
+    kind: Group
+    name: "ktcloud:sre"

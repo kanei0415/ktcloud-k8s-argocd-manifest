@@ -1,0 +1,40 @@
+argo-rollouts:
+  # Controller + the kubectl-argo-rollouts dashboard. The controller watches
+  # all namespaces, so the Rollout/AnalysisTemplate objects the MSA chart
+  # renders in ktcloud-market-msa are reconciled cluster-wide.
+  controller:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+    # runAsNonRoot / readOnlyRootFilesystem to satisfy the Gatekeeper policies.
+    securityContext:
+      runAsNonRoot: true
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+      seccompProfile:
+        type: RuntimeDefault
+
+  # Bundle the read-only Rollouts dashboard (reachable via port-forward like
+  # ArgoCD; not exposed through Traefik).
+  dashboard:
+    enabled: true
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+
+  # Surface controller metrics to the existing kube-prometheus-stack.
+  serviceMonitor:
+    enabled: true
+    additionalLabels:
+      release: kps

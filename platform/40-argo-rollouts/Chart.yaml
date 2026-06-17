@@ -1,0 +1,11 @@
+apiVersion: v2
+name: argo-rollouts
+description: Argo Rollouts progressive-delivery controller (canary + analysis)
+type: application
+version: 1.0.0
+appVersion: "1.7.2"
+
+dependencies:
+  - name: argo-rollouts
+    version: "2.37.x"
+    repository: https://argoproj.github.io/argo-helm

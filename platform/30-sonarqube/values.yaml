@@ -1,0 +1,72 @@
+# =============================================================================
+# Self-hosted SonarQube (Community Edition)
+# -----------------------------------------------------------------------------
+# ACCESS: SonarQube is NOT exposed through Traefik / the ALB. It is reached
+#         purely by port-forward (internal, security-team only):
+#
+#           kubectl -n sonarqube port-forward svc/sonarqube-sonarqube 9000:9000
+#           open http://localhost:9000   (default admin/admin — change on first login)
+#
+#         CI talks to it in-cluster at:
+#           http://sonarqube-sonarqube.sonarqube.svc:9000
+#
+# GATEKEEPER CAVEAT: SonarQube bundles Elasticsearch, which historically needs
+#         an init container to raise vm.max_map_count and may struggle with a
+#         strict readOnlyRootFilesystem. The cluster's OPA Gatekeeper
+#         K8sRequiredNonRoot / K8sReadOnlyRootFilesystem constraints are scoped
+#         ONLY to namespace `ktcloud-market-msa` (via labelSelector
+#         app.kubernetes.io/part-of: ktcloud-market-msa), so the `sonarqube`
+#         namespace is already outside their match scope and needs no change.
+#         If the constraints are ever broadened cluster-wide, exempt this ns —
+#         see docs/SONARQUBE.md for the exact label note. We still run the main
+#         workload as non-root (UID 1000) for good hygiene.
+# =============================================================================
+
+sonarqube:
+  # Community Edition image (free, open-source).
+  edition: community
+
+  # Run the SonarQube web/compute container as non-root.
+  securityContext:
+    fsGroup: 1000
+  containerSecurityContext:
+    runAsUser: 1000
+    runAsNonRoot: true
+
+  # Internal-only — reached via kubectl port-forward, never Traefik.
+  service:
+    type: ClusterIP
+
+  # SonarQube is heavy (JVM + Elasticsearch). Modest but realistic sizing.
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      cpu: "2"
+      memory: 4Gi
+
+  # Persist SonarQube data (extensions, temp, ES indices) on EBS.
+  persistence:
+    enabled: true
+    storageClass: ebs-sc
+    accessMode: ReadWriteOnce
+    size: 10Gi
+
+  # Required by the chart's metrics/health probes. Use a Secret in real envs;
+  # set here for the self-managed cluster.
+  monitoringPasscode: "kt-cloud-sonar-monitoring"
+
+  # Bundled PostgreSQL subchart (chart name: postgresql). Enabled with its own
+  # persistent volume on the EBS storage class.
+  postgresql:
+    enabled: true
+    primary:
+      persistence:
+        enabled: true
+        storageClass: ebs-sc
+        size: 8Gi
+
+  # Point SonarQube at the bundled PostgreSQL (in-cluster, default subchart svc).
+  jdbcOverwrite:
+    enable: false

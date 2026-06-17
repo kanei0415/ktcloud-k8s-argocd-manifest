@@ -1,0 +1,29 @@
+# OWASP ZAP scan rule tuning (tab-separated)
+# Columns:  <RULE_ID>\t<ACTION>\t<OPTIONAL_URL_REGEX>\t<OPTIONAL_NOTE>
+# ACTION is one of:
+#   IGNORE - drop the finding entirely (it will NOT appear in the SARIF report)
+#   WARN   - keep as a warning (default ZAP behaviour, appears in report)
+#   FAIL   - treat as a failure (escalates exit code)
+# Rule IDs are ZAP plugin/alert IDs. Look them up at:
+#   https://www.zaproxy.org/docs/alerts/
+# Only override defaults here when a finding is a confirmed false positive
+# for THIS staging environment — keep the list short and commented.
+
+# --- Known/accepted on staging behind Traefik -----------------------------
+# 10020	Anti-clickjacking / X-Frame-Options is enforced at the Traefik edge
+#        for production but not on the staging entrypoint; downgrade to WARN
+#        rather than FAIL so it does not block the nightly run.
+10020	WARN	(?i).*	X-Frame-Options handled at prod edge, staging-only WARN
+
+# 10096	Timestamp disclosure — low value, very noisy on JS bundles served
+#        by the frontend SPA. Ignore on the frontend path only.
+10096	IGNORE	(?i).*/ktcloud-msa/user(/.*)?$	Timestamp disclosure noise on SPA assets
+
+# 10027	Information disclosure - suspicious comments inside the Vite-built
+#        SPA bundle (sourcemap-style hints). Not actionable on staging.
+10027	IGNORE	(?i).*/ktcloud-msa/user(/.*)?$	Suspicious comments in SPA bundle
+
+# --- Genuinely tune-worthy but kept visible -------------------------------
+# 10049	Non-storable / storable cache-control on API responses — keep as WARN
+#        so we notice regressions but do not fail the gateway scan on it.
+10049	WARN	(?i).*/ktcloud-msa/user-api/.*	Cache-control on API responses, review only

@@ -56,3 +56,40 @@ spec:
   entityOperator:
     topicOperator: {}
     userOperator: {}
+  # kafka-exporter publishes per-consumer-group lag + per-topic offset metrics
+  # (kafka_consumergroup_lag, kafka_topic_partition_current_offset, ...) on
+  # :9404. Strimzi runs it as a sidecar Deployment; the PodMonitor below points
+  # kube-prometheus-stack at it so the consumer-lag alert can fire early when
+  # the order <-> inventory saga falls behind (the same signal KEDA scales on).
+  kafkaExporter:
+    topicRegex: ".*"
+    groupRegex: ".*"
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+---
+# PodMonitor for the Strimzi kafka-exporter pod. kube-prometheus-stack
+# (fullname "kps") auto-discovers PodMonitors; label release: kps keeps it
+# inside the same Prometheus instance the recording/alert rules target.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: kafka-exporter
+  namespace: kafka
+  labels:
+    release: kps
+spec:
+  selector:
+    matchLabels:
+      strimzi.io/kind: Kafka
+  namespaceSelector:
+    matchNames:
+      - kafka
+  podMetricsEndpoints:
+    - path: /metrics
+      port: tcp-prometheus
+      interval: 15s

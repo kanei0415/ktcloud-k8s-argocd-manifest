@@ -108,3 +108,49 @@ spec:
               Aggregate request rate across ktcloud-market-msa is more than 3x the level
               seen 1 hour ago, sustained for 5 minutes. Possible traffic surge, scrape
               misconfiguration, or log flooding.
+
+    # Kafka consumer-lag alerts. Source metric kafka_consumergroup_lag comes from
+    # the Strimzi kafka-exporter (50-kafka-cluster spec.kafkaExporter) scraped via
+    # the kafka-exporter PodMonitor. KEDA already scales the saga consumers on
+    # this lag (lagThreshold 50/partition); these alerts catch the case where
+    # scaling is NOT keeping up — i.e. event processing is genuinely delayed.
+    - name: ktcloud.kafka.alerts
+      rules:
+        # Saga consumer lag building up: total lag for a saga consumer group
+        # sustained above 500 messages for 10 minutes (well past the per-partition
+        # KEDA target of 50 x 3 partitions = 150), signalling consumers can't keep up.
+        - alert: KafkaConsumerLagHigh
+          expr: >
+            sum by (consumergroup, topic) (
+              kafka_consumergroup_lag{consumergroup=~"order-service-group|inventory-service-group"}
+            ) > 500
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Kafka consumer lag high for {{ $lc }} $labels.consumergroup {{ $rc }}"
+            description: >
+              Consumer group {{ $lc }} $labels.consumergroup {{ $rc }} on topic
+              {{ $lc }} $labels.topic {{ $rc }} has a total lag of
+              {{ $lc }} $value {{ $rc }} messages, sustained for 10 minutes. Event
+              processing is falling behind despite KEDA autoscaling — check consumer
+              health, DB latency, or Kafka broker pressure.
+
+        # Severe / stuck lag: lag is climbing AND already very large — the saga is
+        # effectively stalled (e.g. a poison message or a dead consumer).
+        - alert: KafkaConsumerLagCritical
+          expr: >
+            sum by (consumergroup, topic) (
+              kafka_consumergroup_lag{consumergroup=~"order-service-group|inventory-service-group"}
+            ) > 5000
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Kafka consumer lag CRITICAL for {{ $lc }} $labels.consumergroup {{ $rc }}"
+            description: >
+              Consumer group {{ $lc }} $labels.consumergroup {{ $rc }} on topic
+              {{ $lc }} $labels.topic {{ $rc }} has a total lag of
+              {{ $lc }} $value {{ $rc }} messages for 5 minutes. The order/inventory
+              saga is effectively stalled — investigate immediately (poison message,
+              crashed consumer, or broker outage).

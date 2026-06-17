@@ -1,0 +1,76 @@
+# =============================================================================
+# Role: 개발자 / developer  --  cluster-wide READ-ONLY (조회 전용)
+# =============================================================================
+# Subjects are NOT individual users. On this self-managed kubeadm cluster humans
+# authenticate with client certificates; the certificate's Organization (O=)
+# field is mapped by the API server to an RBAC Group. So we bind to the Group
+# "ktcloud:developers" (issue certs with /O=ktcloud:developers/CN=<user>).
+#
+# DELIBERATE EXCEPTION to "prefer namespaced Role": read-only diagnostics
+# legitimately need to span the whole cluster (any namespace + cluster-scoped
+# objects like nodes/namespaces), so this is a ClusterRole + ClusterRoleBinding
+# on purpose. Secrets are intentionally EXCLUDED from the read grant.
+# =============================================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ktcloud-developer-readonly
+  labels:
+    app.kubernetes.io/part-of: rbac-human-roles
+    rbac.ktcloud.io/role: developer
+rules:
+  # Core namespaced read targets (note: secrets are deliberately omitted).
+  - apiGroups: [""]
+    resources:
+      - pods
+      - pods/log
+      - services
+      - configmaps
+      - events
+      - endpoints
+      - persistentvolumeclaims
+      - replicationcontrollers
+    verbs: ["get", "list", "watch"]
+  # Cluster-scoped read targets.
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - namespaces
+    verbs: ["get", "list", "watch"]
+  # Workload read targets.
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - replicasets
+      - statefulsets
+      - daemonsets
+    verbs: ["get", "list", "watch"]
+  # Ingress / network read targets.
+  - apiGroups: ["networking.k8s.io"]
+    resources:
+      - ingresses
+      - networkpolicies
+    verbs: ["get", "list", "watch"]
+  # Argo Rollouts are the canary/blue-green workloads in this platform; let
+  # developers observe their progress read-only.
+  - apiGroups: ["argoproj.io"]
+    resources:
+      - rollouts
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ktcloud-developer-readonly
+  labels:
+    app.kubernetes.io/part-of: rbac-human-roles
+    rbac.ktcloud.io/role: developer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ktcloud-developer-readonly
+subjects:
+  # Cert Organization group: /O=ktcloud:developers
+  - apiGroup: rbac.authorization.k8s.io
+    kind: Group
+    name: "ktcloud:developers"

@@ -1,0 +1,186 @@
+name: dast-zap
+
+# Dynamic Application Security Testing (DAST) against the running STAGING
+# environment. Unlike the IaC/SAST gates in ci.yaml (Trivy config + SonarQube),
+# ZAP exercises the live app through Traefik — the API gateway
+# (/ktcloud-msa/user-api/api/v1) and the frontend (/ktcloud-msa/user) — to find
+# runtime vulnerabilities (injection, missing security headers, auth issues).
+#
+# This is NOT a per-PR gate: staging must already be deployed. It runs:
+#   * manually  (workflow_dispatch, optional target_url override)
+#   * nightly   (cron) against vars.STAGING_URL
+# Findings are converted to SARIF 2.1.0 and uploaded to the GitHub Security tab.
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: "Target base URL to scan (defaults to vars.STAGING_URL)"
+        required: false
+        type: string
+  schedule:
+    # 02:30 UTC every day — after the staging deploy has settled.
+    - cron: "30 2 * * *"
+
+permissions:
+  contents: read
+  security-events: write   # required for codeql-action/upload-sarif
+
+jobs:
+  zap-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve target URL
+        id: target
+        run: |
+          set -e
+          URL="${{ inputs.target_url }}"
+          if [ -z "$URL" ]; then
+            URL="${{ vars.STAGING_URL }}"
+          fi
+          if [ -z "$URL" ]; then
+            echo "::error::No target URL: pass target_url input or set the STAGING_URL repo variable."
+            exit 1
+          fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "Scanning: $URL"
+
+      - name: OWASP ZAP full scan
+        uses: zaproxy/action-full-scan@v0.12.0
+        with:
+          target: ${{ steps.target.outputs.url }}
+          # Tune false positives without editing the workflow.
+          rules_file_name: .zap/rules.tsv
+          # Emit a machine-readable JSON report we convert to SARIF below.
+          # -J writes the JSON report into the workspace.
+          cmd_options: "-J zap-report.json"
+          # Do not fail the job on findings — we want the report uploaded and
+          # Slack notified regardless; triage happens in the Security tab.
+          fail_action: false
+          # The action also opens a GitHub issue by default; disable that since
+          # we route everything through SARIF + Slack instead.
+          allow_issue_writing: false
+
+      - name: Convert ZAP JSON to SARIF
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json, os, hashlib
+
+          src = "zap-report.json"
+          out = "zap.sarif"
+
+          # ZAP severity (riskcode) -> SARIF level
+          # riskcode: 0 Info, 1 Low, 2 Medium, 3 High
+          level_map = {"0": "note", "1": "note", "2": "warning", "3": "error"}
+
+          rules = {}
+          results = []
+
+          if os.path.exists(src):
+              with open(src) as f:
+                  data = json.load(f)
+              for site in data.get("site", []):
+                  site_uri = site.get("@name", "")
+                  for alert in site.get("alerts", []):
+                      rule_id = str(alert.get("pluginid", "zap-unknown"))
+                      name = alert.get("alert") or alert.get("name") or rule_id
+                      riskcode = str(alert.get("riskcode", "0"))
+                      level = level_map.get(riskcode, "note")
+
+                      if rule_id not in rules:
+                          rules[rule_id] = {
+                              "id": rule_id,
+                              "name": name,
+                              "shortDescription": {"text": name},
+                              "fullDescription": {
+                                  "text": (alert.get("desc") or name)[:1000] or name
+                              },
+                              "helpUri": alert.get("reference", "").split("\n")[0]
+                                         or "https://www.zaproxy.org/docs/alerts/",
+                              "properties": {
+                                  "tags": ["security", "dast", "owasp-zap"]
+                              },
+                          }
+
+                      instances = alert.get("instances") or [{}]
+                      for inst in instances:
+                          uri = inst.get("uri") or site_uri or "unknown"
+                          msg = name
+                          extra = inst.get("evidence") or inst.get("param")
+                          if extra:
+                              msg = f"{name} — {extra}"
+                          # Stable fingerprint so re-runs dedupe in the Security tab.
+                          fp = hashlib.sha256(
+                              f"{rule_id}|{uri}|{inst.get('param','')}".encode()
+                          ).hexdigest()
+                          results.append({
+                              "ruleId": rule_id,
+                              "level": level,
+                              "message": {"text": msg},
+                              "partialFingerprints": {"zapAlert": fp},
+                              "locations": [{
+                                  "physicalLocation": {
+                                      "artifactLocation": {"uri": uri}
+                                  }
+                              }],
+                          })
+
+          sarif = {
+              "version": "2.1.0",
+              "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+              "runs": [{
+                  "tool": {
+                      "driver": {
+                          "name": "OWASP ZAP",
+                          "informationUri": "https://www.zaproxy.org/",
+                          "version": "full-scan-0.12.0",
+                          "rules": list(rules.values()),
+                      }
+                  },
+                  "results": results,
+              }],
+          }
+
+          with open(out, "w") as f:
+              json.dump(sarif, f, indent=2)
+          print(f"Wrote {len(results)} result(s) across {len(rules)} rule(s) to {out}")
+          PY
+
+      - name: Upload ZAP reports as build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-reports
+          path: |
+            zap-report.json
+            zap.sarif
+            report_html.report
+            report_md.md
+          if-no-files-found: ignore
+
+      - name: Upload SARIF to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: zap.sarif
+          category: dast-zap
+
+      - name: Notify Slack #security-report on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          channel-id: "#security-report"
+          slack-message: ":x: dast-zap failed @ ${{ github.sha }}"
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+      - name: Notify Slack #security-report on success
+        if: success()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          channel-id: "#security-report"
+          slack-message: ":white_check_mark: dast-zap completed @ ${{ github.sha }} — review findings in the Security tab"
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}

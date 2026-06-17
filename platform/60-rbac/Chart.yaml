@@ -1,0 +1,9 @@
+apiVersion: v2
+name: rbac-human-roles
+description: >-
+  Human-role RBAC for the cluster. Defines three roles (developer / operator /
+  SRE) and binds them to client-certificate Organization (O=) groups. Raw
+  manifests only (no chart dependencies); the objects set their own namespaces
+  in metadata, so the ArgoCD destination namespace is just a default.
+type: application
+version: 1.0.0

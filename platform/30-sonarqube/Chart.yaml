@@ -1,0 +1,11 @@
+apiVersion: v2
+name: sonarqube
+description: Self-hosted SonarQube (Community Edition) for the DevSecOps quality gate
+type: application
+version: 1.0.0
+appVersion: "10.7.0"
+
+dependencies:
+  - name: sonarqube
+    version: "10.7.x"
+    repository: https://SonarSource.github.io/helm-chart-sonarqube

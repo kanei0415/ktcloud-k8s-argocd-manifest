@@ -16,6 +16,12 @@ spec:
         appname: istio-base
         ns: istio-system
         wave: "0"
+      # Human-role RBAC (developer / operator / SRE) bound to cert O= groups.
+      # Wave 0 so identities exist before any workload lands.
+      - path: platform/60-rbac
+        appname: rbac-human-roles
+        ns: kube-system
+        wave: "0"
 
       # Wave 1: control planes / operators that need CRDs from wave 0 (or bundle their own)
       - path: platform/11-istiod
@@ -42,6 +48,12 @@ spec:
         appname: kube-prometheus-stack
         ns: kube-prometheus-stack
         wave: "1"
+      # Self-hosted SonarQube (SAST + coverage quality gate) — reached via
+      # port-forward; CI calls it through the reusable workflow in the values repo.
+      - path: platform/30-sonarqube
+        appname: sonarqube
+        ns: sonarqube
+        wave: "1"
 
       # Wave 2: edge (ALB-fronted ingress). Traefik depends on the
       # ServiceMonitor CRD from kube-prometheus-stack (wave 1).
@@ -58,6 +70,10 @@ spec:
       - path: platform/40-keda
         appname: keda
         ns: keda
+        wave: "1"
+      - path: platform/40-argo-rollouts
+        appname: argo-rollouts
+        ns: argo-rollouts
         wave: "1"
       - path: platform/40-gatekeeper
         appname: gatekeeper
