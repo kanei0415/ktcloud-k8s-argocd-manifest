@@ -32,6 +32,12 @@ spec:
         appname: external-secrets
         ns: external-secrets
         wave: "1"
+      # CloudNativePG operator — owns the postgresql.cnpg.io CRDs the per-service
+      # Cluster CRs (rendered by the msa-chart) depend on.
+      - path: platform/40-cnpg-operator
+        appname: cnpg-operator
+        ns: cnpg-system
+        wave: "1"
       - path: platform/20-cluster-autoscaler
         appname: cluster-autoscaler
         ns: kube-system

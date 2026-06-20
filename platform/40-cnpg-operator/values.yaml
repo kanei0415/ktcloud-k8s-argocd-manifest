@@ -1,0 +1,17 @@
+# CloudNativePG operator. Watches all namespaces by default, so it reconciles
+# the per-service Cluster CRs living in ktcloud-market-msa with no extra config.
+cloudnative-pg:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+  # The operator's OWN /metrics. kube-prometheus-stack scrapes any PodMonitor it
+  # finds; per-database Cluster CRs enable their instance PodMonitors separately.
+  monitoring:
+    podMonitorEnabled: true
+    grafanaDashboard:
+      create: false
