@@ -59,8 +59,23 @@ sonarqube:
 
   # Bundled PostgreSQL subchart (chart name: postgresql). Enabled with its own
   # persistent volume on the EBS storage class.
+  #
+  # IMAGE OVERRIDE: the chart's default (bitnami/postgresql:11.14.0-debian-10-r22)
+  # was removed from Docker Hub (Bitnami registry migration) -> ImagePullBackOff,
+  # and PG 11 is below SonarQube 10.7's minimum (PG 13+) anyway. Pin to the
+  # bitnamilegacy mirror at PG 15 (pullable + SonarQube-supported). Same pattern
+  # the MSA services use for their postgres subcharts.
   postgresql:
     enabled: true
+    image:
+      registry: docker.io
+      repository: bitnamilegacy/postgresql
+      tag: "15"
+    volumePermissions:
+      image:
+        registry: docker.io
+        repository: bitnamilegacy/bitnami-shell
+        tag: 11-debian-11-r136
     primary:
       persistence:
         enabled: true

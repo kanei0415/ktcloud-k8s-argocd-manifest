@@ -9,11 +9,11 @@ metadata:
   namespace: ktcloud-market-msa
 spec:
   hard:
-    requests.cpu: "8"
-    requests.memory: 16Gi
-    limits.cpu: "16"
-    limits.memory: 32Gi
-    pods: "60"
+    requests.cpu: "12"
+    requests.memory: 24Gi
+    limits.cpu: "28"
+    limits.memory: 56Gi
+    pods: "80"
 ---
 # ResourceQuota for the monitoring namespace.
 # Isolates kube-prometheus-stack resource consumption from application workloads
