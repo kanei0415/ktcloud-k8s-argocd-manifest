@@ -11,9 +11,13 @@ spec:
   hard:
     requests.cpu: "12"
     requests.memory: 24Gi
-    limits.cpu: "28"
-    limits.memory: 56Gi
-    pods: "80"
+    # limits.cpu/memory are overcommit ceilings (not scheduled against physical
+    # capacity), so set them generously: every pod carries an Istio sidecar
+    # (~2 CPU limit) plus the CNPG HA replicas, which exhausted a tighter cap and
+    # blocked the gateway ReplicaSet from creating pods (ProgressDeadlineExceeded).
+    limits.cpu: "80"
+    limits.memory: 96Gi
+    pods: "120"
 ---
 # ResourceQuota for the monitoring namespace.
 # Isolates kube-prometheus-stack resource consumption from application workloads
