@@ -69,13 +69,17 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 10
             failureThreshold: 6
+          # Liveness must NOT depend on cluster formation, or a slow/blocked
+          # bootstrap gets killed in a loop. Probe the node HTTP root ("/"
+          # returns 200 as soon as the ES process is serving) instead of
+          # /_cluster/health. Readiness still gates traffic on cluster health.
           livenessProbe:
             httpGet:
-              path: /_cluster/health
+              path: /
               port: 9200
-            initialDelaySeconds: 60
+            initialDelaySeconds: 90
             periodSeconds: 20
-            failureThreshold: 6
+            failureThreshold: 10
           volumeMounts:
             - name: data
               mountPath: /usr/share/elasticsearch/data

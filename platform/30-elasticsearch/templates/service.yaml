@@ -6,6 +6,12 @@ metadata:
     app: elasticsearch
 spec:
   clusterIP: None
+  # Publish not-yet-ready pod IPs so the ES nodes can resolve each other via
+  # discovery.seed_hosts=elasticsearch-headless DURING bootstrap. Without this a
+  # headless service only returns READY endpoints, but a node isn't ready until
+  # the cluster forms — a deadlock that left every node failing its
+  # /_cluster/health liveness probe and CrashLooping.
+  publishNotReadyAddresses: true
   selector:
     app: elasticsearch
   ports:
