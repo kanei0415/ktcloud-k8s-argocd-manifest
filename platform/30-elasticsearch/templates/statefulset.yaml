@@ -7,6 +7,11 @@ metadata:
 spec:
   serviceName: elasticsearch-headless
   replicas: 3
+  # Parallel so all 3 nodes start at once and can form the initial master
+  # quorum (cluster.initial_master_nodes lists all three). With the default
+  # OrderedReady, es-0 must be Ready before es-1 starts — but es-0 can't be
+  # Ready until quorum forms with es-1/es-2: a bootstrap deadlock.
+  podManagementPolicy: Parallel
   selector:
     matchLabels:
       app: elasticsearch
